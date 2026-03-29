@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v2.6';
+const VERSION = 'v2.7';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 
@@ -46,8 +46,11 @@ const SORT_FIELDS = [
 // ── Boot ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('version-badge').textContent = VERSION;
+  updateStickyOffset();
   loadData();
 });
+
+window.addEventListener('resize', updateStickyOffset);
 
 document.addEventListener('click', e => {
   if (!e.target.closest('.filter-wrap')) closeAll();
@@ -384,6 +387,7 @@ function render() {
 
   renderTable(list, searchTerms);
   renderTags();
+  updateStickyOffset();
 
   document.getElementById('results-bar').innerHTML =
     `<strong>${list.length.toLocaleString()}</strong> of ${products.length.toLocaleString()} products`;
@@ -519,7 +523,18 @@ function setError(m) {
   else   { b.classList.remove('show'); }
 }
 
-// ── Stale data warning ────────────────────────────────────
+// ── Sticky thead offset ───────────────────────────────────
+// Measures the actual height of header + toolbar and sets
+// a CSS variable so thead sticks just below them.
+function updateStickyOffset() {
+  const header  = document.querySelector('header');
+  const toolbar = document.querySelector('.toolbar');
+  if (!header || !toolbar) return;
+  const offset = header.offsetHeight + toolbar.offsetHeight;
+  document.documentElement.style.setProperty('--sticky-top', offset + 'px');
+}
+
+
 // Reads the lastupdate field from the first product to gauge
 // how fresh the data is. Warns if older than 48 hours.
 function checkStaleData() {
