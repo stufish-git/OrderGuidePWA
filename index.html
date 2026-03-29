@@ -1,744 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Order Guide">
-<title>Order Guide</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-text-size-adjust: 100%; }
-
-:root {
-  --bg:        #f6f7f9;
-  --surface:   #ffffff;
-  --border:    #e8eaed;
-  --border2:   #f0f2f5;
-  --text:      #111318;
-  --text2:     #5f6368;
-  --text3:     #9aa0a6;
-  --accent:    #1a73e8;
-  --accent-bg: #e8f0fe;
-  --green:     #188038;
-  --green-bg:  #e6f4ea;
-  --amber:     #b06000;
-  --amber-bg:  #fef7e0;
-  --red:       #c5221f;
-  --red-bg:    #fce8e6;
-  --pill-h:    36px;
-  --radius-pill: 20px;
-  --radius:    10px;
-  --radius-sm: 6px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow:    0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
-  --font:      'DM Sans', sans-serif;
-  --mono:      'DM Mono', monospace;
-  --header-h:  56px;
-}
-
-body {
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  min-height: 100dvh;
-}
-
-/* Loading */
-#loading {
-  position: fixed; inset: 0; z-index: 999;
-  background: var(--surface);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 18px;
-  transition: opacity 0.3s ease;
-}
-#loading.hidden { opacity: 0; pointer-events: none; }
-.loader-wordmark { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
-.loader-wordmark em { font-style: normal; color: var(--accent); }
-.loader-dots { display: flex; gap: 6px; }
-.loader-dots span {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--border);
-  animation: dpulse 1.2s ease-in-out infinite;
-}
-.loader-dots span:nth-child(2) { animation-delay: 0.2s; }
-.loader-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dpulse {
-  0%,100% { background: var(--border); transform: scale(1); }
-  50%      { background: var(--accent); transform: scale(1.35); }
-}
-
-/* Header */
-header {
-  height: var(--header-h);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center;
-  padding: 0 16px; gap: 10px;
-  position: sticky; top: 0; z-index: 100;
-}
-.wordmark { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.2px; white-space: nowrap; }
-.wordmark em { font-style: normal; color: var(--accent); }
-
-.sync-chip {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 10px;
-  background: var(--bg); border-radius: var(--radius-pill);
-  font-size: 11.5px; color: var(--text3);
-  font-family: var(--mono); white-space: nowrap;
-}
-.sync-pip {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--border);
-  transition: background 0.3s, box-shadow 0.3s; flex-shrink: 0;
-}
-.sync-pip.ok    { background: #34a853; box-shadow: 0 0 0 2px rgba(52,168,83,0.2); }
-.sync-pip.error { background: var(--red); }
-
-.hdr-gap { flex: 1; }
-
-.pill {
-  height: var(--pill-h);
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 0 16px;
-  border-radius: var(--radius-pill);
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  font-family: var(--font); font-size: 13.5px; font-weight: 500;
-  color: var(--text2); cursor: pointer;
-  transition: all 0.15s ease; white-space: nowrap; user-select: none;
-}
-.pill:hover { border-color: #c4c9d4; color: var(--text); background: var(--bg); }
-.pill:active { transform: scale(0.97); }
-.pill-solid { background: var(--accent); border-color: var(--accent); color: #fff; }
-.pill-solid:hover { background: #1557b0; border-color: #1557b0; color: #fff; }
-.pill-solid.spinning svg { animation: spin 0.7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Error */
-#error-banner {
-  display: none; background: var(--red-bg); color: var(--red);
-  font-size: 13px; padding: 10px 16px; border-bottom: 1px solid #f5c6c5;
-}
-#error-banner.show { display: block; }
-
-/* Toolbar */
-.toolbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-  position: sticky; top: var(--header-h); z-index: 90;
-}
-
-/* Segmented toggle */
-.seg {
-  display: flex; background: var(--bg);
-  border: 1.5px solid var(--border); border-radius: var(--radius-pill);
-  padding: 3px; gap: 2px; flex-shrink: 0;
-}
-.seg-btn {
-  height: 28px; padding: 0 14px; border: none; border-radius: 20px;
-  font-family: var(--font); font-size: 13px; font-weight: 500;
-  cursor: pointer; color: var(--text2); background: transparent;
-  transition: all 0.15s ease;
-}
-.seg-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
-.seg-btn:not(.active):hover { color: var(--text); }
-
-/* Search */
-.search-wrap { position: relative; flex: 1; min-width: 160px; max-width: 300px; }
-.search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
-#search-input {
-  width: 100%; height: var(--pill-h);
-  padding: 0 12px 0 36px;
-  border: 1.5px solid var(--border); border-radius: var(--radius-pill);
-  font-family: var(--font); font-size: 13.5px;
-  color: var(--text); background: var(--bg); outline: none;
-  transition: all 0.15s;
-}
-#search-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(26,115,232,0.12); }
-#search-input::placeholder { color: var(--text3); }
-
-/* Filter pills */
-.filter-wrap { position: relative; }
-.filter-pill {
-  height: var(--pill-h);
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 0 14px;
-  border-radius: var(--radius-pill); border: 1.5px solid var(--border);
-  background: var(--bg); font-family: var(--font); font-size: 13.5px; font-weight: 500;
-  color: var(--text2); cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.filter-pill:hover { border-color: #c4c9d4; color: var(--text); }
-.filter-pill.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
-.filter-pill svg { flex-shrink: 0; }
-.f-badge { background: var(--accent); color: #fff; border-radius: 10px; padding: 1px 6px; font-size: 11px; font-weight: 600; line-height: 1.4; }
-.chevron { transition: transform 0.2s; color: var(--text3); }
-.filter-pill.open .chevron { transform: rotate(180deg); }
-
-/* Dropdown */
-.dropdown {
-  display: none; position: absolute;
-  top: calc(100% + 6px); left: 0;
-  min-width: 230px; background: var(--surface);
-  border: 1.5px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow-lg); z-index: 300; overflow: hidden;
-}
-.dropdown.open { display: block; }
-.dd-search { padding: 10px 10px 8px; border-bottom: 1px solid var(--border2); }
-.dd-search input {
-  width: 100%; height: 32px; padding: 0 10px;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  font-family: var(--font); font-size: 13px; outline: none; background: var(--bg);
-}
-.dd-search input:focus { border-color: var(--accent); }
-.dd-actions { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border2); }
-.dd-act {
-  font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
-  border: 1px solid var(--border); background: var(--bg); color: var(--text2);
-  cursor: pointer; font-family: var(--font);
-}
-.dd-act:hover { background: var(--border); color: var(--text); }
-.dd-list { max-height: 240px; overflow-y: auto; padding: 4px 0; }
-.dd-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px; cursor: pointer; font-size: 13.5px; transition: background 0.1s;
-}
-.dd-item:hover { background: var(--bg); }
-.dd-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
-.dd-item label { cursor: pointer; flex: 1; line-height: 1.3; }
-
-/* Sort panel */
-.sort-panel {
-  display: none; position: absolute;
-  top: calc(100% + 6px); right: 0; width: 320px;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-lg);
-  z-index: 300; padding: 14px;
-}
-.sort-panel.open { display: block; }
-.sort-panel-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 10px; }
-.sort-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.sort-row select {
-  flex: 1; height: 34px; padding: 0 8px;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  font-family: var(--font); font-size: 13px;
-  background: var(--bg); color: var(--text); outline: none;
-}
-.sort-row select:focus { border-color: var(--accent); }
-.sort-dir {
-  height: 34px; padding: 0 10px;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  font-family: var(--mono); font-size: 11px; font-weight: 500;
-  background: var(--bg); color: var(--text2); cursor: pointer; transition: all 0.12s;
-}
-.sort-dir.asc  { border-color: #34a853; background: var(--green-bg); color: var(--green); }
-.sort-dir.desc { border-color: #fbbc04; background: var(--amber-bg); color: var(--amber); }
-.sort-del {
-  width: 28px; height: 28px; border-radius: 50%;
-  border: none; background: none; cursor: pointer;
-  color: var(--text3); font-size: 17px;
-  display: flex; align-items: center; justify-content: center;
-}
-.sort-del:hover { background: var(--red-bg); color: var(--red); }
-.add-sort {
-  margin-top: 4px; width: 100%; height: 32px;
-  border: 1.5px dashed var(--border); border-radius: var(--radius-sm);
-  background: none; cursor: pointer;
-  font-family: var(--font); font-size: 12.5px; color: var(--text3);
-}
-.add-sort:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-.add-sort:disabled { opacity: 0.4; cursor: default; }
-
-/* Tag bar */
-#tag-bar {
-  padding: 0 16px 10px; display: none;
-  flex-wrap: wrap; gap: 6px; align-items: center;
-  background: var(--surface); border-bottom: 1px solid var(--border);
-}
-#tag-bar.show { display: flex; }
-.tag {
-  display: inline-flex; align-items: center; gap: 4px;
-  height: 28px; padding: 0 10px 0 12px;
-  background: var(--accent-bg); border: 1px solid #b8d0f9;
-  border-radius: 20px; font-size: 12.5px; font-weight: 500; color: var(--accent);
-}
-.tag-x {
-  display: flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; border-radius: 50%;
-  border: none; background: none; cursor: pointer;
-  color: var(--accent); font-size: 14px; line-height: 1; padding: 0; margin-left: 2px;
-}
-.tag-x:hover { background: rgba(26,115,232,0.15); }
-.clear-all {
-  height: 28px; padding: 0 12px; border: none; border-radius: 20px;
-  background: none; cursor: pointer; font-family: var(--font);
-  font-size: 12.5px; color: var(--text3); margin-left: auto;
-}
-.clear-all:hover { color: var(--red); background: var(--red-bg); }
-
-/* Results */
-.results-bar { padding: 8px 16px; font-size: 12.5px; color: var(--text3); font-family: var(--mono); }
-.results-bar strong { color: var(--text2); font-weight: 500; }
-
-/* Table */
-.table-wrap { padding: 0 16px 48px; overflow-x: auto; }
-table {
-  width: 100%; border-collapse: separate; border-spacing: 0;
-  background: var(--surface); border-radius: var(--radius);
-  border: 1.5px solid var(--border); overflow: hidden;
-  box-shadow: var(--shadow-sm); font-size: 13.5px;
-}
-thead tr { background: var(--bg); }
-th {
-  padding: 10px 14px; text-align: left;
-  font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.07em;
-  color: var(--text3); border-bottom: 1.5px solid var(--border); white-space: nowrap;
-}
-td { padding: 10px 14px; border-bottom: 1px solid var(--border2); vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-tbody tr { transition: background 0.1s; }
-tbody tr:hover td { background: #fafbfc; }
-.col-supplier { font-weight: 500; color: var(--text); white-space: nowrap; }
-.col-product  { color: var(--text); }
-.col-code     { font-family: var(--mono); font-size: 12px; color: var(--text3); white-space: nowrap; }
-.col-price    { font-family: var(--mono); font-weight: 500; text-align: right; white-space: nowrap; }
-.col-pack     { font-size: 13px; color: var(--text2); white-space: nowrap; }
-.col-measure  { font-size: 13px; color: var(--text2); white-space: nowrap; }
-.col-unitcost { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--text3); white-space: nowrap; }
-.col-date     { font-family: var(--mono); font-size: 11.5px; color: var(--text3); white-space: nowrap; }
-mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
-
-/* Empty state */
-#empty { display: none; text-align: center; padding: 64px 20px; color: var(--text3); }
-#empty.show { display: block; }
-#empty svg { margin-bottom: 14px; opacity: 0.35; }
-#empty p { font-size: 15px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
-#empty small { font-size: 13px; }
-
-/* Print */
-#print-hdr { display: none; }
-@media print {
-  header, .toolbar, #tag-bar, .results-bar { display: none !important; }
-  #print-hdr { display: block; padding-bottom: 12px; border-bottom: 2px solid #111; margin-bottom: 12px; }
-  #print-hdr h1 { font-size: 18px; font-weight: 600; }
-  #print-hdr p  { font-size: 11px; color: #666; margin-top: 4px; }
-  body { background: white; }
-  .table-wrap { padding: 0; overflow: visible; }
-  table { border: 1px solid #ccc; box-shadow: none; border-radius: 0; }
-  thead tr { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
-  td { padding: 6px 10px; }
-}
-
-/* Mobile */
-@media (max-width: 680px) {
-  .table-wrap { padding: 0 10px 48px; }
-  header, .toolbar { padding-left: 12px; padding-right: 12px; }
-  .col-code, .col-date, .col-measure { display: none; }
-  .sort-panel { width: 280px; right: -16px; }
-}
-
-/* Fade-in */
-@keyframes fade-up { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-.toolbar     { animation: fade-up 0.3s ease 0.05s both; }
-.table-wrap  { animation: fade-up 0.3s ease 0.1s both; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Order Guide">
+  <title>Order Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="loading">
-  <div class="loader-wordmark">Order<em>Guide</em></div>
-  <div class="loader-dots"><span></span><span></span><span></span></div>
-</div>
-
-<div id="print-hdr">
-  <h1>Order Guide</h1>
-  <p id="print-meta"></p>
-</div>
-
-<header>
-  <div class="wordmark">Order<em>Guide</em></div>
-  <div class="sync-chip">
-    <div class="sync-pip" id="sync-pip"></div>
-    <span id="sync-label">Loading</span>
-  </div>
-  <div class="hdr-gap"></div>
-  <button class="pill" onclick="window.print()">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-    Print
-  </button>
-  <button class="pill pill-solid" id="refresh-btn" onclick="refreshData()">
-    <svg id="refresh-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-    Refresh
-  </button>
-</header>
-
-<div id="error-banner"></div>
-
-<div class="toolbar">
-  <div class="seg">
-    <button class="seg-btn active" data-area="all"     onclick="setArea('all')">All</button>
-    <button class="seg-btn"        data-area="bar"     onclick="setArea('bar')">Bar</button>
-    <button class="seg-btn"        data-area="kitchen" onclick="setArea('kitchen')">Kitchen</button>
+  <!-- Loading overlay -->
+  <div id="loading">
+    <div class="loader-wordmark">Order<em>Guide</em></div>
+    <div class="loader-dots"><span></span><span></span><span></span></div>
   </div>
 
-  <div class="search-wrap">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" id="search-input" placeholder="Search products, codes, suppliers..." oninput="onSearch(this.value)">
+  <!-- Print header (visible only when printing) -->
+  <div id="print-hdr">
+    <h1>Order Guide</h1>
+    <p id="print-meta"></p>
   </div>
 
-  <div class="filter-wrap" id="fw-supplier">
-    <button class="filter-pill" id="fp-supplier" onclick="toggleDD('dd-supplier','fp-supplier')">
-      Supplier
-      <span class="f-badge" id="fb-supplier" style="display:none"></span>
-      <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <div class="dropdown" id="dd-supplier">
-      <div class="dd-search"><input type="text" placeholder="Search suppliers..." oninput="ddSearch('dd-supplier',this.value)"></div>
-      <div class="dd-actions">
-        <button class="dd-act" onclick="selAll('supplier')">Select all</button>
-        <button class="dd-act" onclick="selNone('supplier')">Clear</button>
-      </div>
-      <div class="dd-list" id="dl-supplier"></div>
+  <!-- Header -->
+  <header>
+    <div class="wordmark">Order<em>Guide</em></div>
+    <div class="sync-chip">
+      <div class="sync-pip" id="sync-pip"></div>
+      <span id="sync-label">Loading</span>
     </div>
-  </div>
-
-  <div class="filter-wrap" id="fw-category">
-    <button class="filter-pill" id="fp-category" onclick="toggleDD('dd-category','fp-category')">
-      Category
-      <span class="f-badge" id="fb-category" style="display:none"></span>
-      <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="hdr-gap"></div>
+    <button class="pill" onclick="window.print()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 6 2 18 2 18 9"/>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Print
     </button>
-    <div class="dropdown" id="dd-category">
-      <div class="dd-search"><input type="text" placeholder="Search categories..." oninput="ddSearch('dd-category',this.value)"></div>
-      <div class="dd-actions">
-        <button class="dd-act" onclick="selAll('category')">Select all</button>
-        <button class="dd-act" onclick="selNone('category')">Clear</button>
-      </div>
-      <div class="dd-list" id="dl-category"></div>
-    </div>
-  </div>
-
-  <div class="filter-wrap" id="fw-subcategory">
-    <button class="filter-pill" id="fp-subcategory" onclick="toggleDD('dd-subcategory','fp-subcategory')">
-      Sub Category
-      <span class="f-badge" id="fb-subcategory" style="display:none"></span>
-      <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    <button class="pill pill-solid" id="refresh-btn" onclick="refreshData()">
+      <svg id="refresh-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="23 4 23 10 17 10"/>
+        <polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Refresh
     </button>
-    <div class="dropdown" id="dd-subcategory">
-      <div class="dd-search"><input type="text" placeholder="Search..." oninput="ddSearch('dd-subcategory',this.value)"></div>
-      <div class="dd-actions">
-        <button class="dd-act" onclick="selAll('subcategory')">Select all</button>
-        <button class="dd-act" onclick="selNone('subcategory')">Clear</button>
-      </div>
-      <div class="dd-list" id="dl-subcategory"></div>
+  </header>
+
+  <!-- Error banner -->
+  <div id="error-banner"></div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+
+    <!-- Area toggle -->
+    <div class="seg">
+      <button class="seg-btn active" data-area="all"     onclick="setArea('all')">All</button>
+      <button class="seg-btn"        data-area="bar"     onclick="setArea('bar')">Bar</button>
+      <button class="seg-btn"        data-area="kitchen" onclick="setArea('kitchen')">Kitchen</button>
     </div>
-  </div>
 
-  <div class="filter-wrap" style="margin-left:auto">
-    <button class="filter-pill" id="fp-sort" onclick="toggleDD('sort-panel','fp-sort')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
-      Sort
-      <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <div class="sort-panel" id="sort-panel">
-      <div class="sort-panel-title">Sort order</div>
-      <div id="sort-rows"></div>
-      <button class="add-sort" id="add-sort" onclick="addSort()">+ Add level</button>
+    <!-- Search -->
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="Search products, codes, suppliers..."
+        oninput="onSearch(this.value)">
     </div>
-  </div>
-</div>
 
-<div id="tag-bar"></div>
-<div class="results-bar" id="results-bar">Loading...</div>
-
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Supplier</th>
-        <th>Product Name</th>
-        <th>Code</th>
-        <th>Price</th>
-        <th>Pack Size</th>
-        <th>Unit</th>
-        <th>Unit Cost</th>
-        <th>Last Update</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
-  <div id="empty">
-    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <p>No products found</p>
-    <small>Try adjusting your search or filters</small>
-  </div>
-</div>
-
-<script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
-
-const COL = {
-  'Supplier':'supplier','Product Name':'product','Product Code':'code',
-  'Stock Category':'category','Sub Stock Category':'subcategory',
-  'Price':'price','Pack Size':'pack','Unit Measure':'measure',
-  'Unit Cost':'unitcost','Last Update':'lastupdate','Area':'area'
-};
-
-let products = [];
-let opts = { supplier:[], category:[], subcategory:[] };
-let filters = { area:'all', search:'', supplier:new Set(), category:new Set(), subcategory:new Set() };
-let sorts = [{ field:'supplier', dir:'asc' }];
-
-document.addEventListener('DOMContentLoaded', loadData);
-document.addEventListener('click', e => {
-  if (!e.target.closest('.filter-wrap')) closeAll();
-});
-
-async function loadData() {
-  try {
-    const r = await fetch(CSV_URL + '&t=' + Date.now());
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    products = parseCSV(await r.text());
-    if (!products.length) throw new Error('Sheet appears empty');
-    buildOpts(); renderSortRows(); render();
-    const t = new Date();
-    document.getElementById('sync-label').textContent =
-      t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('sync-pip').className = 'sync-pip ok';
-    setError(null);
-  } catch(e) {
-    setError('Could not load data: ' + e.message);
-    document.getElementById('sync-pip').className = 'sync-pip error';
-    document.getElementById('sync-label').textContent = 'Error';
-    document.getElementById('results-bar').textContent = '';
-  } finally {
-    document.getElementById('loading').classList.add('hidden');
-  }
-}
-
-async function refreshData() {
-  const btn = document.getElementById('refresh-btn');
-  btn.disabled = true; btn.classList.add('spinning');
-  await loadData();
-  btn.disabled = false; btn.classList.remove('spinning');
-}
-
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
-  const hdrs = csvRow(lines[0]);
-  return lines.slice(1).map(l => {
-    const v = csvRow(l);
-    if (v.every(x=>x==='')) return null;
-    const o = {};
-    hdrs.forEach((h,i) => { o[COL[h.trim()]||h.trim()] = (v[i]||'').trim(); });
-    return o;
-  }).filter(Boolean);
-}
-
-function csvRow(line) {
-  const res=[]; let cur='', q=false;
-  for(let i=0;i<line.length;i++){
-    const c=line[i];
-    if(c==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q; }
-    else if(c===','&&!q){ res.push(cur);cur=''; }
-    else cur+=c;
-  }
-  res.push(cur); return res;
-}
-
-function buildOpts() {
-  ['supplier','category','subcategory'].forEach(k => {
-    opts[k] = [...new Set(products.map(p=>p[k]).filter(Boolean))].sort();
-    renderDDItems(k);
-  });
-}
-
-function renderDDItems(k) {
-  const allSel = filters[k].size === 0;
-  document.getElementById('dl-'+k).innerHTML = opts[k].map(v => `
-    <label class="dd-item">
-      <input type="checkbox" onchange="onCheck('${k}','${esc(v)}',this.checked)"
-        ${allSel || filters[k].has(v) ? 'checked' : ''}>
-      <label>${esc(v)}</label>
-    </label>`).join('');
-}
-
-function ddSearch(ddId, q) {
-  document.querySelectorAll('#'+ddId+' .dd-item').forEach(el => {
-    el.style.display = el.querySelector('label').textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
-  });
-}
-
-function setArea(a) {
-  filters.area = a;
-  document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.area===a));
-  render();
-}
-
-function onSearch(v) { filters.search = v; render(); }
-
-function onCheck(k, v, checked) {
-  const all = opts[k];
-  if (filters[k].size === 0) {
-    if (!checked) filters[k] = new Set(all.filter(x=>x!==v));
-  } else {
-    checked ? filters[k].add(v) : filters[k].delete(v);
-    if (filters[k].size === all.length) filters[k] = new Set();
-  }
-  updatePill(k); render();
-}
-
-function selAll(k)  { filters[k]=new Set(); renderDDItems(k); updatePill(k); render(); }
-function selNone(k) {
-  filters[k]=new Set(['__none__']);
-  document.querySelectorAll('#dl-'+k+' input').forEach(i=>i.checked=false);
-  updatePill(k); render();
-}
-
-function removeTag(k, v) {
-  if (filters[k].size===0) filters[k]=new Set(opts[k].filter(x=>x!==v));
-  else filters[k].delete(v);
-  if (filters[k].size===opts[k].length) filters[k]=new Set();
-  renderDDItems(k); updatePill(k); render();
-}
-
-function updatePill(k) {
-  const badge = document.getElementById('fb-'+k);
-  const pill  = document.getElementById('fp-'+k);
-  const n = filters[k].size;
-  if (n===0 || filters[k].has('__none__')) { badge.style.display='none'; pill.classList.remove('active'); }
-  else { badge.textContent=n; badge.style.display='inline'; pill.classList.add('active'); }
-}
-
-function clearAll() {
-  filters.search=''; filters.area='all';
-  document.getElementById('search-input').value='';
-  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.area==='all'));
-  ['supplier','category','subcategory'].forEach(k=>{ filters[k]=new Set(); renderDDItems(k); updatePill(k); });
-  render();
-}
-
-const SFIELDS = [
-  {v:'supplier',l:'Supplier'},{v:'product',l:'Product Name'},{v:'code',l:'Product Code'},
-  {v:'category',l:'Category'},{v:'subcategory',l:'Sub Category'},{v:'price',l:'Price'},
-  {v:'pack',l:'Pack Size'},{v:'unitcost',l:'Unit Cost'},{v:'lastupdate',l:'Last Update'},{v:'area',l:'Area'},
-];
-
-function renderSortRows() {
-  document.getElementById('sort-rows').innerHTML = sorts.map((s,i)=>`
-    <div class="sort-row">
-      <select onchange="sorts[${i}].field=this.value;render()">
-        ${SFIELDS.map(f=>`<option value="${f.v}"${f.v===s.field?' selected':''}>${f.l}</option>`).join('')}
-      </select>
-      <button class="sort-dir ${s.dir}" onclick="sorts[${i}].dir=sorts[${i}].dir==='asc'?'desc':'asc';renderSortRows()">
-        ${s.dir==='asc'?'ASC':'DESC'}
+    <!-- Supplier filter -->
+    <div class="filter-wrap" id="fw-supplier">
+      <button class="filter-pill" id="fp-supplier" onclick="toggleDD('dd-supplier','fp-supplier')">
+        Supplier
+        <span class="f-badge" id="fb-supplier" style="display:none"></span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
       </button>
-      ${sorts.length>1?`<button class="sort-del" onclick="sorts.splice(${i},1);renderSortRows()">x</button>`:'<span style="width:28px"></span>'}
-    </div>`).join('');
-  document.getElementById('add-sort').disabled = sorts.length >= 3;
-  render();
-}
+      <div class="dropdown" id="dd-supplier">
+        <div class="dd-search">
+          <input type="text" placeholder="Search suppliers..." oninput="ddSearch('dd-supplier',this.value)">
+        </div>
+        <div class="dd-actions">
+          <button class="dd-act" onclick="selAll('supplier')">Select all</button>
+          <button class="dd-act" onclick="selNone('supplier')">Clear</button>
+        </div>
+        <div class="dd-list" id="dl-supplier"></div>
+      </div>
+    </div>
 
-function addSort() { if(sorts.length<3){sorts.push({field:'product',dir:'asc'});renderSortRows();} }
+    <!-- Category filter -->
+    <div class="filter-wrap" id="fw-category">
+      <button class="filter-pill" id="fp-category" onclick="toggleDD('dd-category','fp-category')">
+        Category
+        <span class="f-badge" id="fb-category" style="display:none"></span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="dropdown" id="dd-category">
+        <div class="dd-search">
+          <input type="text" placeholder="Search categories..." oninput="ddSearch('dd-category',this.value)">
+        </div>
+        <div class="dd-actions">
+          <button class="dd-act" onclick="selAll('category')">Select all</button>
+          <button class="dd-act" onclick="selNone('category')">Clear</button>
+        </div>
+        <div class="dd-list" id="dl-category"></div>
+      </div>
+    </div>
 
-function render() {
-  let list = products;
-  if (filters.area!=='all') list = list.filter(p=>(p.area||'').toLowerCase()===filters.area);
-  ['supplier','category','subcategory'].forEach(k=>{
-    if (filters[k].has('__none__')) { list=[]; return; }
-    if (filters[k].size>0) list = list.filter(p=>filters[k].has(p[k]));
-  });
-  const q = filters.search.trim().toLowerCase();
-  if (q) list = list.filter(p=>
-    (p.product||'').toLowerCase().includes(q)||
-    (p.supplier||'').toLowerCase().includes(q)||
-    (p.code||'').toLowerCase().includes(q)||
-    (p.category||'').toLowerCase().includes(q)||
-    (p.subcategory||'').toLowerCase().includes(q));
-  list = [...list].sort((a,b)=>{
-    for(const s of sorts){
-      const av=a[s.field]||'', bv=b[s.field]||'';
-      const na=parseFloat(String(av).replace(/[^0-9.]/g,'')), nb=parseFloat(String(bv).replace(/[^0-9.]/g,''));
-      let c = (!isNaN(na)&&!isNaN(nb)) ? na-nb : String(av).localeCompare(String(bv));
-      if(c!==0) return s.dir==='asc'?c:-c;
-    }
-    return 0;
-  });
-  renderTable(list, q);
-  renderTags();
-  document.getElementById('results-bar').innerHTML =
-    `<strong>${list.length.toLocaleString()}</strong> of ${products.length.toLocaleString()} products`;
-  const d=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  const parts=[];
-  if(filters.area!=='all') parts.push('Area: '+filters.area);
-  if(filters.search) parts.push('Search: "'+filters.search+'"');
-  ['supplier','category','subcategory'].forEach(k=>{
-    if(filters[k].size>0&&!filters[k].has('__none__')) parts.push([...filters[k]].join(', '));
-  });
-  document.getElementById('print-meta').textContent=(parts.length?parts.join(' - ')+' - ':'')+d;
-}
+    <!-- Sub category filter -->
+    <div class="filter-wrap" id="fw-subcategory">
+      <button class="filter-pill" id="fp-subcategory" onclick="toggleDD('dd-subcategory','fp-subcategory')">
+        Sub Category
+        <span class="f-badge" id="fb-subcategory" style="display:none"></span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="dropdown" id="dd-subcategory">
+        <div class="dd-search">
+          <input type="text" placeholder="Search..." oninput="ddSearch('dd-subcategory',this.value)">
+        </div>
+        <div class="dd-actions">
+          <button class="dd-act" onclick="selAll('subcategory')">Select all</button>
+          <button class="dd-act" onclick="selNone('subcategory')">Clear</button>
+        </div>
+        <div class="dd-list" id="dl-subcategory"></div>
+      </div>
+    </div>
 
-function renderTable(list, q) {
-  const tbody=document.getElementById('tbody'), empty=document.getElementById('empty');
-  if (!list.length) { tbody.innerHTML=''; empty.classList.add('show'); return; }
-  empty.classList.remove('show');
-  tbody.innerHTML = list.map(p=>`
-    <tr>
-      <td class="col-supplier">${hi(p.supplier||'',q)}</td>
-      <td class="col-product">${hi(p.product||'',q)}</td>
-      <td class="col-code">${hi(p.code||'',q)}</td>
-      <td class="col-price">${fmt(p.price,2)}</td>
-      <td class="col-pack">${esc(p.pack||'')}</td>
-      <td class="col-measure">${esc(p.measure||'')}</td>
-      <td class="col-unitcost">${fmt(p.unitcost,4)}</td>
-      <td class="col-date">${esc(p.lastupdate||'')}</td>
-    </tr>`).join('');
-}
+    <!-- Sort -->
+    <div class="filter-wrap" style="margin-left:auto">
+      <button class="filter-pill" id="fp-sort" onclick="toggleDD('sort-panel','fp-sort')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="6" y1="12" x2="18" y2="12"/>
+          <line x1="9" y1="18" x2="15" y2="18"/>
+        </svg>
+        Sort
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="sort-panel" id="sort-panel">
+        <div class="sort-panel-title">Sort order</div>
+        <div id="sort-rows"></div>
+        <button class="add-sort" id="add-sort" onclick="addSort()">+ Add level</button>
+      </div>
+    </div>
 
-function renderTags() {
-  const bar=document.getElementById('tag-bar'); const tags=[];
-  if (filters.search) tags.push(mkTag(`Search: "${esc(filters.search)}"`,`clearSearch()`));
-  if (filters.area!=='all') tags.push(mkTag('Area: '+filters.area,`setArea('all')`));
-  const labels={supplier:'Supplier',category:'Category',subcategory:'Sub Cat'};
-  ['supplier','category','subcategory'].forEach(k=>{
-    if(filters[k].has('__none__')) tags.push(mkTag(labels[k]+': none',`selAll('${k}')`));
-    else filters[k].forEach(v=>tags.push(mkTag(labels[k]+': '+esc(v),`removeTag('${k}','${esc(v)}')`)));
-  });
-  if(tags.length){ bar.innerHTML=tags.join('')+`<button class="clear-all" onclick="clearAll()">Clear all</button>`; bar.classList.add('show'); }
-  else { bar.innerHTML=''; bar.classList.remove('show'); }
-}
+  </div><!-- /toolbar -->
 
-function mkTag(label, onclick) {
-  return `<div class="tag">${label}<button class="tag-x" onclick="${onclick}">x</button></div>`;
-}
-function clearSearch() { filters.search=''; document.getElementById('search-input').value=''; render(); }
+  <!-- Active filter tags -->
+  <div id="tag-bar"></div>
 
-function toggleDD(id, pillId) {
-  const panel=document.getElementById(id), pill=pillId?document.getElementById(pillId):null;
-  const open=panel.classList.contains('open');
-  closeAll();
-  if(!open){ panel.classList.add('open'); if(pill) pill.classList.add('open'); }
-}
-function closeAll() {
-  document.querySelectorAll('.dropdown.open,.sort-panel.open').forEach(el=>el.classList.remove('open'));
-  document.querySelectorAll('.filter-pill.open').forEach(el=>el.classList.remove('open'));
-}
+  <!-- Results count -->
+  <div class="results-bar" id="results-bar">Loading...</div>
 
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function hi(s,q){if(!q)return esc(s);const re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');return esc(s).replace(re,'<mark>$1</mark>');}
-function fmt(v,dp){if(!v&&v!==0)return'';const n=parseFloat(String(v).replace(/[^0-9.]/g,''));return isNaN(n)?esc(v):'£'+n.toFixed(dp);}
-function setError(m){const b=document.getElementById('error-banner');if(m){b.textContent=m;b.classList.add('show');}else b.classList.remove('show');}
-</script>
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Supplier</th>
+          <th>Product Name</th>
+          <th>Code</th>
+          <th>Price</th>
+          <th>Pack Size</th>
+          <th>Unit</th>
+          <th>Unit Cost</th>
+          <th>Last Update</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <div id="empty">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <p>No products found</p>
+      <small>Try adjusting your search or filters</small>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <span class="version-badge" id="version-badge"></span>
+  </footer>
+
+  <script src="app.js"></script>
 </body>
 </html>
