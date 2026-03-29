@@ -388,6 +388,7 @@ thead {
   position: sticky;
   top: 0;
   z-index: 10;
+  background: var(--bg);
 }
 thead tr { background: var(--bg); }
 
@@ -400,7 +401,8 @@ thead tr { background: var(--bg); }
 }
 thead tr .col-sticky {
   background: var(--bg);
-  z-index: 12;
+  z-index: 13;
+  box-shadow: 2px 0 0 var(--border);
 }
 tbody tr:hover .col-sticky { background: var(--surface); }
 .col-sticky::after {
