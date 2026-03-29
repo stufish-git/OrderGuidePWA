@@ -171,14 +171,15 @@
     <table>
       <thead>
         <tr>
-          <th>Supplier</th>
-          <th>Product Name</th>
-          <th>Code</th>
-          <th>Price</th>
-          <th>Pack Size</th>
-          <th>Unit</th>
-          <th>Unit Cost</th>
-          <th>Last Update</th>
+          <th data-col="supplier"   onclick="sortByCol('supplier')">  Supplier    <span class="sort-arrow"></span></th>
+          <th data-col="product"    onclick="sortByCol('product')">   Product Name <span class="sort-arrow"></span></th>
+          <th data-col="code"       onclick="sortByCol('code')">      Code         <span class="sort-arrow"></span></th>
+          <th data-col="category"   onclick="sortByCol('category')">  Category     <span class="sort-arrow"></span></th>
+          <th data-col="price"      onclick="sortByCol('price')">     Price        <span class="sort-arrow"></span></th>
+          <th data-col="pack"       onclick="sortByCol('pack')">      Pack Size    <span class="sort-arrow"></span></th>
+          <th data-col="measure"    onclick="sortByCol('measure')">   Unit         <span class="sort-arrow"></span></th>
+          <th data-col="unitcost"   onclick="sortByCol('unitcost')">  Unit Cost    <span class="sort-arrow"></span></th>
+          <th data-col="lastupdate" onclick="sortByCol('lastupdate')">Last Update  <span class="sort-arrow"></span></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>

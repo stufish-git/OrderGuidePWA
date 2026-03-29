@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v1.4';
+const VERSION = 'v1.6';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 
@@ -62,6 +62,7 @@ async function loadData() {
     if (!products.length) throw new Error('Sheet appears empty');
     buildOpts();
     renderSortRows();
+    renderColHeaders();
     render();
     const t = new Date();
     document.getElementById('sync-label').textContent =
@@ -210,7 +211,35 @@ function clearSearch() {
   render();
 }
 
-// ── Sort ──────────────────────────────────────────────────
+// ── Column header sort ────────────────────────────────────
+function sortByCol(field) {
+  if (sorts[0].field === field) {
+    // Same column — toggle direction
+    sorts[0].dir = sorts[0].dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    // New column — set as primary sort, keep others as secondary
+    sorts = [{ field, dir: 'asc' }, ...sorts.filter(s => s.field !== field)].slice(0, 3);
+  }
+  renderSortRows();
+  renderColHeaders();
+}
+
+function renderColHeaders() {
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    const field     = th.dataset.col;
+    const sortIndex = sorts.findIndex(s => s.field === field);
+    const arrow     = th.querySelector('.sort-arrow');
+    if (sortIndex === 0) {
+      arrow.innerHTML  = sorts[0].dir === 'asc' ? '&#9650;' : '&#9660;';
+      arrow.className  = 'sort-arrow active';
+    } else {
+      arrow.innerHTML  = '&#9650;';
+      arrow.className  = 'sort-arrow';
+    }
+  });
+}
+
+
 function renderSortRows() {
   document.getElementById('sort-rows').innerHTML = sorts.map((s, i) => `
     <div class="sort-row">
@@ -230,6 +259,7 @@ function renderSortRows() {
     </div>`).join('');
   document.getElementById('add-sort').disabled = sorts.length >= 3;
   render();
+  renderColHeaders();
 }
 
 function addSort() {
@@ -310,6 +340,7 @@ function renderTable(list, q) {
       <td class="col-supplier">${hi(p.supplier  || '', q)}</td>
       <td class="col-product"> ${hi(p.product   || '', q)}</td>
       <td class="col-code">    ${hi(p.code      || '', q)}</td>
+      <td class="col-category">${hi(p.category  || '', q)}</td>
       <td class="col-price">   ${fmt(p.price,   2)}</td>
       <td class="col-pack">    ${esc(p.pack     || '')}</td>
       <td class="col-measure"> ${esc(p.measure  || '')}</td>
