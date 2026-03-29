@@ -1,4 +1,4 @@
-const CACHE_NAME = 'order-guide-v2.7';
+const CACHE_NAME = 'order-guide-v2.8';
 
 // App shell files to cache on install
 const SHELL = [

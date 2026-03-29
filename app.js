@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v2.7';
+const VERSION = 'v2.8';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 
@@ -521,16 +521,28 @@ function setError(m) {
   const b = document.getElementById('error-banner');
   if (m) { b.textContent = m; b.classList.add('show'); }
   else   { b.classList.remove('show'); }
+  updateStickyOffset();
 }
 
 // ── Sticky thead offset ───────────────────────────────────
-// Measures the actual height of header + toolbar and sets
-// a CSS variable so thead sticks just below them.
+// Measures every element above the table and sets the CSS
+// variable so thead sticks exactly at the right position.
 function updateStickyOffset() {
-  const header  = document.querySelector('header');
-  const toolbar = document.querySelector('.toolbar');
-  if (!header || !toolbar) return;
-  const offset = header.offsetHeight + toolbar.offsetHeight;
+  const ids = ['error-banner', 'stale-banner'];
+  const selectors = ['header', '.toolbar', '#tag-bar', '.results-bar'];
+
+  let offset = 0;
+
+  selectors.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) offset += el.offsetHeight;
+  });
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('show')) offset += el.offsetHeight;
+  });
+
   document.documentElement.style.setProperty('--sticky-top', offset + 'px');
 }
 
@@ -566,6 +578,7 @@ function setStaleWarning(msg) {
   const banner = document.getElementById('stale-banner');
   if (msg) { banner.textContent = '⚠️  ' + msg; banner.classList.add('show'); }
   else      { banner.classList.remove('show'); }
+  updateStickyOffset();
 }
 
 // ── Copy on tap ───────────────────────────────────────────
