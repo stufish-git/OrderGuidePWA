@@ -45,18 +45,16 @@
       </svg>
       Print
     </button>
-    <button class="pill pill-solid" id="refresh-btn" onclick="refreshData()">
-      <svg id="refresh-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <polyline points="23 4 23 10 17 10"/>
-        <polyline points="1 20 1 14 7 14"/>
-        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-      </svg>
-      Refresh
-    </button>
   </header>
 
   <!-- Error banner -->
   <div id="error-banner"></div>
+
+  <!-- Stale data warning -->
+  <div id="stale-banner"></div>
+
+  <!-- Copy toast -->
+  <div id="copy-toast"></div>
 
   <!-- Toolbar -->
   <div class="toolbar">
@@ -76,6 +74,7 @@
       </svg>
       <input type="text" id="search-input" placeholder="Search products, codes, suppliers..."
         oninput="onSearch(this.value)">
+      <button class="search-info-btn" onclick="openSearchInfo()" title="Search help">i</button>
     </div>
 
     <!-- Supplier filter -->
@@ -171,15 +170,15 @@
     <table>
       <thead>
         <tr>
-          <th data-col="supplier"   onclick="sortByCol('supplier')">  Supplier    <span class="sort-arrow"></span></th>
-          <th data-col="product"    onclick="sortByCol('product')">   Product Name <span class="sort-arrow"></span></th>
-          <th data-col="code"       onclick="sortByCol('code')">      Code         <span class="sort-arrow"></span></th>
-          <th data-col="category"   onclick="sortByCol('category')">  Category     <span class="sort-arrow"></span></th>
-          <th data-col="price"      onclick="sortByCol('price')">     Price        <span class="sort-arrow"></span></th>
-          <th data-col="pack"       onclick="sortByCol('pack')">      Pack Size    <span class="sort-arrow"></span></th>
-          <th data-col="measure"    onclick="sortByCol('measure')">   Unit         <span class="sort-arrow"></span></th>
-          <th data-col="unitcost"   onclick="sortByCol('unitcost')">  Unit Cost    <span class="sort-arrow"></span></th>
-          <th data-col="lastupdate" onclick="sortByCol('lastupdate')">Last Update  <span class="sort-arrow"></span></th>
+          <th class="col-product  col-sticky" data-col="product"    onclick="sortByCol('product')">   Product Name <span class="sort-arrow"></span></th>
+          <th class="col-supplier"            data-col="supplier"   onclick="sortByCol('supplier')">  Supplier     <span class="sort-arrow"></span></th>
+          <th class="col-code"                data-col="code"       onclick="sortByCol('code')">      Code         <span class="sort-arrow"></span></th>
+          <th class="col-category"            data-col="category"   onclick="sortByCol('category')">  Category     <span class="sort-arrow"></span></th>
+          <th class="col-price"               data-col="price"      onclick="sortByCol('price')">     Price        <span class="sort-arrow"></span></th>
+          <th class="col-pack"                data-col="pack"       onclick="sortByCol('pack')">      Pack Size    <span class="sort-arrow"></span></th>
+          <th class="col-measure"             data-col="measure"    onclick="sortByCol('measure')">   Unit         <span class="sort-arrow"></span></th>
+          <th class="col-unitcost"            data-col="unitcost"   onclick="sortByCol('unitcost')">  Unit Cost    <span class="sort-arrow"></span></th>
+          <th class="col-date"                data-col="lastupdate" onclick="sortByCol('lastupdate')">Last Update  <span class="sort-arrow"></span></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -199,6 +198,38 @@
   <footer>
     <span class="version-badge" id="version-badge"></span>
   </footer>
+
+  <!-- Search info modal -->
+  <div id="search-modal" onclick="closeSearchInfo(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">How to search</span>
+        <button class="modal-close" onclick="closeSearchInfo()">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-row">
+          <code>gin</code>
+          <span>Finds anything containing those letters — Gin, Sloe Gin, Fingerling</span>
+        </div>
+        <div class="modal-row">
+          <code>"gin"</code>
+          <span>Finds gin as a whole word only — Gin, Sloe Gin, but not Fingerling</span>
+        </div>
+        <div class="modal-row">
+          <code>"sloe gin"</code>
+          <span>Finds that exact phrase only</span>
+        </div>
+        <div class="modal-row">
+          <code>gin tonic</code>
+          <span>Finds rows containing both words, anywhere</span>
+        </div>
+        <div class="modal-row">
+          <code>"gin" tonic</code>
+          <span>Gin as a whole word, tonic anywhere — mix and match</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
   <script>
