@@ -139,9 +139,14 @@ header {
 }
 #copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* Clickable rows */
-tbody tr { transition: background 0.1s; cursor: pointer; }
-tbody tr:hover td { background: #f0f4ff; }
+/* Clickable cells */
+tbody tr { transition: background 0.1s; }
+td.copyable { cursor: pointer; }
+td.copyable:hover {
+  background: var(--accent-bg) !important;
+  color: var(--accent);
+}
+td.copyable:active { background: #d2e3fc !important; }
 
 /* ── Toolbar ─────────────────────────────────────────────── */
 .toolbar {
@@ -391,7 +396,7 @@ thead tr .col-sticky {
   background: var(--bg);
   z-index: 3;
 }
-tbody tr:hover .col-sticky { background: #fafbfc; }
+tbody tr:hover .col-sticky { background: var(--surface); }
 .col-sticky::after {
   content: '';
   position: absolute;

@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v2.5';
+const VERSION = 'v2.6';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 
@@ -412,19 +412,20 @@ function renderTable(list, terms) {
   }
   empty.classList.remove('show');
   tbody.innerHTML = list.map(p => {
-    const price = fmt(p.price, 2);
-    const copyData = `copyRow('${esc(p.product)}','${esc(p.code)}','${price}')`;
+    const price    = fmt(p.price, 2);
+    const unitcost = fmt(p.unitcost, 4);
+    const cp = (val) => `onclick="copyCell('${esc(val)}')"`;
     return `
-    <tr onclick="${copyData}" title="Tap to copy">
-      <td class="col-product col-sticky"> ${hiTerms(p.product   || '', terms)}</td>
-      <td class="col-supplier">           ${hiTerms(p.supplier  || '', terms)}</td>
-      <td class="col-code">               ${hiTerms(p.code      || '', terms)}</td>
-      <td class="col-category">           ${hiTerms(p.category  || '', terms)}</td>
-      <td class="col-price">              ${price}</td>
-      <td class="col-pack">               ${esc(p.pack     || '')}</td>
-      <td class="col-measure">            ${esc(p.measure  || '')}</td>
-      <td class="col-unitcost">           ${fmt(p.unitcost, 4)}</td>
-      <td class="col-date">               ${esc(p.lastupdate || '')}</td>
+    <tr>
+      <td class="col-product col-sticky copyable" ${cp(p.product || '')}>${hiTerms(p.product || '', terms)}</td>
+      <td class="col-supplier copyable"            ${cp(p.supplier || '')}>${hiTerms(p.supplier || '', terms)}</td>
+      <td class="col-code copyable"                ${cp(p.code || '')}>${hiTerms(p.code || '', terms)}</td>
+      <td class="col-category copyable"            ${cp(p.category || '')}>${hiTerms(p.category || '', terms)}</td>
+      <td class="col-price copyable"               ${cp(price)}>${price}</td>
+      <td class="col-pack copyable"                ${cp(p.pack || '')}>${esc(p.pack || '')}</td>
+      <td class="col-measure copyable"             ${cp(p.measure || '')}>${esc(p.measure || '')}</td>
+      <td class="col-unitcost copyable"            ${cp(unitcost)}>${unitcost}</td>
+      <td class="col-date copyable"                ${cp(p.lastupdate || '')}>${esc(p.lastupdate || '')}</td>
     </tr>`;
   }).join('');
 }
@@ -555,12 +556,12 @@ function setStaleWarning(msg) {
 // ── Copy on tap ───────────────────────────────────────────
 let copyToast = null;
 
-function copyRow(product, code, price) {
-  const text = [product, code, price].filter(Boolean).join(' — ');
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('Copied: ' + text);
+function copyCell(val) {
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    showToast('Copied: ' + val);
   }).catch(() => {
-    showToast('Could not copy — try long press');
+    showToast('Could not copy');
   });
 }
 
