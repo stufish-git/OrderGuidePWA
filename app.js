@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v1.0';
+const VERSION = 'v1.1';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 
@@ -130,11 +130,11 @@ function buildOpts() {
 function renderDDItems(k) {
   const allSel = filters[k].size === 0;
   document.getElementById('dl-' + k).innerHTML = opts[k].map(v => `
-    <label class="dd-item">
-      <input type="checkbox" onchange="onCheck('${k}','${esc(v)}',this.checked)"
+    <div class="dd-item" onclick="onCheck('${k}','${esc(v)}',!this.querySelector('input').checked);this.querySelector('input').checked=!this.querySelector('input').checked">
+      <input type="checkbox" onclick="event.stopPropagation();onCheck('${k}','${esc(v)}',this.checked)"
         ${allSel || filters[k].has(v) ? 'checked' : ''}>
-      <label>${esc(v)}</label>
-    </label>`).join('');
+      <span>${esc(v)}</span>
+    </div>`).join('');
 }
 
 function ddSearch(ddId, q) {
