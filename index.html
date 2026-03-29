@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ── Reset & Variables ────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:    #0f172a;
+  --navy2:   #1e293b;
+  --navy3:   #334155;
+  --amber:   #d97706;
+  --amber2:  #f59e0b;
+  --amberlt: #fef3c7;
+  --white:   #ffffff;
+  --bg:      #f1f5f9;
+  --bgcard:  #ffffff;
+  --border:  #e2e8f0;
+  --text:    #0f172a;
+  --muted:   #64748b;
+  --green:   #059669;
+  --red:     #dc2626;
+  --radius:  6px;
+  --shadow:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow2: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Loading Overlay ──────────────────────────────────── */
+#loading {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+  transition: opacity 0.4s ease;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+
+.loader-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  color: var(--white);
+  letter-spacing: -0.5px;
+}
+.loader-logo span { color: var(--amber2); }
+
+.loader-bar {
+  width: 200px; height: 3px;
+  background: var(--navy3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.loader-bar-inner {
+  height: 100%;
+  background: var(--amber2);
+  border-radius: 2px;
+  animation: loading-sweep 1.4s ease-in-out infinite;
+}
+@keyframes loading-sweep {
+  0%   { width: 0%;   margin-left: 0; }
+  50%  { width: 60%;  margin-left: 20%; }
+  100% { width: 0%;   margin-left: 100%; }
+}
+.loader-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--navy3);
+  letter-spacing: 0.05em;
+}
+
+/* ── Header ───────────────────────────────────────────── */
+header {
+  background: var(--navy);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  position: sticky; top: 0; z-index: 100;
+}
+
+.header-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--white);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+.header-logo span { color: var(--amber2); }
+
+.header-divider { width: 1px; height: 24px; background: var(--navy3); flex-shrink: 0; }
+
+.sync-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.sync-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--navy3);
+  transition: background 0.3s;
+}
+.sync-dot.live  { background: var(--green); box-shadow: 0 0 0 2px rgba(5,150,105,0.25); }
+.sync-dot.error { background: var(--red); }
+
+.header-spacer { flex: 1; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border: none; border-radius: var(--radius);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--navy3);
+}
+.btn-ghost:hover { background: var(--navy2); color: var(--white); }
+
+.btn-amber {
+  background: var(--amber);
+  color: var(--white);
+}
+.btn-amber:hover { background: var(--amber2); }
+.btn-amber:active { transform: scale(0.97); }
+.btn-amber.spinning svg { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Error Banner ─────────────────────────────────────── */
+#error-banner {
+  display: none;
+  background: #fef2f2; border-bottom: 1px solid #fecaca;
+  padding: 10px 20px;
+  font-size: 13px; color: var(--red);
+}
+#error-banner.show { display: block; }
+
+/* ── Controls Bar ─────────────────────────────────────── */
+.controls {
+  background: var(--bgcard);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Area Toggle */
+.area-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.area-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.area-btn + .area-btn { border-left: 1px solid var(--border); }
+.area-btn.active { background: var(--navy); color: var(--white); }
+.area-btn:not(.active):hover { background: var(--bg); color: var(--text); }
+
+/* Search */
+.search-wrap {
+  position: relative;
+  flex: 1; min-width: 180px; max-width: 320px;
+}
+.search-wrap svg {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); pointer-events: none;
+}
+#search-input {
+  width: 100%;
+  padding: 7px 10px 7px 34px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px; color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.15s;
+}
+#search-input:focus { border-color: var(--amber); background: var(--white); }
+#search-input::placeholder { color: var(--muted); }
+
+/* Filter Dropdowns */
+.filter-group { position: relative; }
+
+.filter-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px; color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+.filter-btn:hover { border-color: var(--amber); }
+.filter-btn.has-selection { border-color: var(--amber); background: var(--amberlt); color: var(--navy); }
+
+.filter-count {
+  background: var(--amber);
+  color: var(--white);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 11px; font-weight: 600;
+}
+
+.dropdown-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px); left: 0;
+  min-width: 220px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow2);
+  z-index: 200;
+  padding: 6px 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.dropdown-panel.open { display: block; }
+
+.dropdown-search {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.dropdown-search input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: 'IBM Plex Sans', sans-serif;
+  outline: none;
+}
+.dropdown-search input:focus { border-color: var(--amber); }
+
+.dropdown-actions {
+  display: flex; gap: 4px;
+  padding: 0 10px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.dropdown-action-btn {
+  padding: 3px 8px; border: none; border-radius: 4px;
+  font-size: 11px; font-family: 'IBM Plex Sans', sans-serif;
+  cursor: pointer; background: var(--bg); color: var(--muted);
+}
+.dropdown-action-btn:hover { background: var(--border); color: var(--text); }
+
+.dropdown-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.1s;
+}
+.dropdown-item:hover { background: var(--bg); }
+.dropdown-item input[type="checkbox"] { accent-color: var(--amber); width: 14px; height: 14px; flex-shrink: 0; }
+.dropdown-item label { cursor: pointer; flex: 1; }
+
+/* Sort Builder */
+.sort-wrap { position: relative; }
+.sort-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px); right: 0;
+  width: 340px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow2);
+  z-index: 200;
+  padding: 12px;
+}
+.sort-panel.open { display: block; }
+
+.sort-panel h4 {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 700;
+  margin-bottom: 10px; color: var(--navy);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.sort-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 6px;
+}
+.sort-row select {
+  flex: 1; padding: 6px 8px;
+  border: 1px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: 'IBM Plex Sans', sans-serif;
+  outline: none; background: var(--bg);
+}
+.sort-row select:focus { border-color: var(--amber); }
+.sort-dir-btn {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); cursor: pointer; font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace; color: var(--muted);
+  transition: all 0.1s;
+}
+.sort-dir-btn.asc  { background: var(--amberlt); color: var(--amber); border-color: var(--amber); }
+.sort-dir-btn.desc { background: #eff6ff; color: #3b82f6; border-color: #93c5fd; }
+.sort-remove {
+  width: 24px; height: 24px; border: none; border-radius: 4px;
+  background: transparent; cursor: pointer; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.sort-remove:hover { background: #fee2e2; color: var(--red); }
+
+.add-sort-btn {
+  font-size: 12px; color: var(--amber); background: none;
+  border: 1px dashed var(--amber); border-radius: 4px;
+  padding: 4px 10px; cursor: pointer; margin-top: 4px;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+.add-sort-btn:hover { background: var(--amberlt); }
+.add-sort-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Filter Tags ──────────────────────────────────────── */
+#filter-tags {
+  display: none;
+  background: var(--bgcard);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 20px;
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+#filter-tags:empty { display: none; }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px 3px 10px;
+  background: var(--amberlt);
+  border: 1px solid #fcd34d;
+  border-radius: 20px;
+  font-size: 12px; color: var(--navy);
+}
+.tag-x {
+  border: none; background: none; cursor: pointer;
+  color: var(--amber); font-size: 14px; line-height: 1;
+  padding: 0; display: flex; align-items: center;
+}
+.tag-x:hover { color: var(--red); }
+
+.clear-all-btn {
+  border: none; background: none;
+  font-size: 12px; color: var(--muted); cursor: pointer;
+  text-decoration: underline; margin-left: auto;
+}
+.clear-all-btn:hover { color: var(--red); }
+
+/* ── Results Bar ──────────────────────────────────────── */
+.results-bar {
+  padding: 8px 20px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg);
+}
+.results-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; color: var(--muted);
+}
+.results-count strong { color: var(--text); }
+
+/* ── Table ────────────────────────────────────────────── */
+.table-container {
+  overflow-x: auto;
+  padding: 0 20px 40px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bgcard);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+thead {
+  background: var(--navy);
+  position: sticky; top: 56px; z-index: 10;
+}
+
+th {
+  padding: 10px 14px;
+  text-align: left;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px; font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  border-right: 1px solid var(--navy3);
+}
+th:last-child { border-right: none; }
+
+td {
+  padding: 9px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+td:last-child { border-right: none; }
+
+tr:last-child td { border-bottom: none; }
+
+tbody tr:hover td { background: #f8fafc; }
+
+.td-supplier {
+  font-weight: 500;
+  color: var(--navy);
+  white-space: nowrap;
+}
+.td-product { font-weight: 500; }
+.td-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; color: var(--muted);
+}
+.td-price {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500; text-align: right;
+  white-space: nowrap;
+}
+.td-unitcost {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; text-align: right;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.td-pack, .td-measure { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.td-date {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--muted);
+  white-space: nowrap;
+}
+
+.area-badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.area-badge.bar     { background: #dbeafe; color: #1d4ed8; }
+.area-badge.kitchen { background: #dcfce7; color: #15803d; }
+
+/* Search highlight */
+mark {
+  background: #fef08a;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* Empty State */
+#empty-state {
+  display: none;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+#empty-state.show { display: block; }
+#empty-state svg { opacity: 0.3; margin-bottom: 12px; }
+#empty-state p { font-size: 15px; margin-bottom: 6px; }
+#empty-state small { font-size: 13px; }
+
+/* ── Print Styles ─────────────────────────────────────── */
+@media print {
+  header, .controls, #filter-tags, .results-bar { display: none !important; }
+  body { background: white; font-size: 11px; }
+  .table-container { padding: 0; overflow: visible; }
+  table { box-shadow: none; }
+  thead { background: #1e293b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  th { color: #ffffff !important; -webkit-print-color-adjust: exact; }
+  td { padding: 6px 10px; }
+  .td-price, .td-unitcost { font-size: 10px; }
+
+  #print-header {
+    display: block !important;
+    padding: 12px 0 16px;
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: 10px;
+  }
+  #print-header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 800;
+    color: #0f172a;
+  }
+  #print-header p { font-size: 11px; color: #64748b; margin-top: 4px; }
+}
+
+#print-header { display: none; }
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .controls { gap: 6px; }
+  .table-container { padding: 0 10px 40px; }
+  header { padding: 0 12px; }
+  th, td { padding: 8px 10px; }
+  .td-code, .td-date, .td-measure { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Loading Overlay ──────────────────────────────── -->
+<div id="loading">
+  <div class="loader-logo">Order<span>Guide</span></div>
+  <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+  <div class="loader-text">Loading product data…</div>
+</div>
+
+<!-- ─── Print Header (print only) ───────────────────── -->
+<div id="print-header">
+  <h1>Order Guide</h1>
+  <p id="print-meta"></p>
+</div>
+
+<!-- ─── Header ───────────────────────────────────────── -->
+<header>
+  <div class="header-logo">Order<span>Guide</span></div>
+  <div class="header-divider"></div>
+  <div class="sync-pill">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">—</span>
+  </div>
+  <div class="header-spacer"></div>
+
+  <button class="btn btn-ghost" onclick="window.print()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print
+  </button>
+
+  <button class="btn btn-amber" id="refresh-btn" onclick="refreshData()">
+    <svg id="refresh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    Refresh
+  </button>
+</header>
+
+<!-- ─── Error Banner ──────────────────────────────────── -->
+<div id="error-banner"></div>
+
+<!-- ─── Controls ─────────────────────────────────────── -->
+<div class="controls">
+
+  <!-- Area Toggle -->
+  <div class="area-toggle">
+    <button class="area-btn active" data-area="all"     onclick="setArea('all')">All</button>
+    <button class="area-btn"        data-area="bar"     onclick="setArea('bar')">Bar</button>
+    <button class="area-btn"        data-area="kitchen" onclick="setArea('kitchen')">Kitchen</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search-input" placeholder="Search products, codes, suppliers…" oninput="onSearch(this.value)">
+  </div>
+
+  <!-- Supplier Filter -->
+  <div class="filter-group" id="fg-supplier">
+    <button class="filter-btn" onclick="toggleDropdown('dd-supplier')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Supplier
+      <span class="filter-count" id="fc-supplier" style="display:none"></span>
+    </button>
+    <div class="dropdown-panel" id="dd-supplier">
+      <div class="dropdown-search"><input type="text" placeholder="Search suppliers…" oninput="filterDropdownItems('dd-supplier', this.value)"></div>
+      <div class="dropdown-actions">
+        <button class="dropdown-action-btn" onclick="selectAll('supplier')">All</button>
+        <button class="dropdown-action-btn" onclick="clearFilter('supplier')">None</button>
+      </div>
+      <div id="dd-supplier-items"></div>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <div class="filter-group" id="fg-category">
+    <button class="filter-btn" onclick="toggleDropdown('dd-category')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Category
+      <span class="filter-count" id="fc-category" style="display:none"></span>
+    </button>
+    <div class="dropdown-panel" id="dd-category">
+      <div class="dropdown-search"><input type="text" placeholder="Search categories…" oninput="filterDropdownItems('dd-category', this.value)"></div>
+      <div class="dropdown-actions">
+        <button class="dropdown-action-btn" onclick="selectAll('category')">All</button>
+        <button class="dropdown-action-btn" onclick="clearFilter('category')">None</button>
+      </div>
+      <div id="dd-category-items"></div>
+    </div>
+  </div>
+
+  <!-- Sub Category Filter -->
+  <div class="filter-group" id="fg-subcategory">
+    <button class="filter-btn" onclick="toggleDropdown('dd-subcategory')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      Sub Cat
+      <span class="filter-count" id="fc-subcategory" style="display:none"></span>
+    </button>
+    <div class="dropdown-panel" id="dd-subcategory">
+      <div class="dropdown-search"><input type="text" placeholder="Search sub categories…" oninput="filterDropdownItems('dd-subcategory', this.value)"></div>
+      <div class="dropdown-actions">
+        <button class="dropdown-action-btn" onclick="selectAll('subcategory')">All</button>
+        <button class="dropdown-action-btn" onclick="clearFilter('subcategory')">None</button>
+      </div>
+      <div id="dd-subcategory-items"></div>
+    </div>
+  </div>
+
+  <!-- Sort -->
+  <div class="sort-wrap filter-group" id="fg-sort">
+    <button class="filter-btn" id="sort-btn" onclick="toggleDropdown('sort-panel')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+      Sort
+    </button>
+    <div class="sort-panel" id="sort-panel">
+      <h4>Sort Order</h4>
+      <div id="sort-rows"></div>
+      <button class="add-sort-btn" id="add-sort-btn" onclick="addSortLevel()">+ Add level</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── Filter Tags ───────────────────────────────────── -->
+<div id="filter-tags"></div>
+
+<!-- ─── Results Bar ──────────────────────────────────── -->
+<div class="results-bar">
+  <div class="results-count" id="results-count">—</div>
+</div>
+
+<!-- ─── Table ────────────────────────────────────────── -->
+<div class="table-container">
+  <table id="main-table">
+    <thead>
+      <tr>
+        <th>Supplier</th>
+        <th>Product Name</th>
+        <th>Code</th>
+        <th>Price</th>
+        <th>Pack Size</th>
+        <th>Unit</th>
+        <th>Unit Cost</th>
+        <th>Last Update</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+  <div id="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <p>No products match your filters</p>
+    <small>Try adjusting your search or clearing some filters</small>
+  </div>
+</div>
+
+
+<!-- ─── JavaScript ────────────────────────────────────── -->
+<script>
+// ============================================================
+//  CONFIG — replace with your published CSV URL
+//  In Google Sheets: File → Share → Publish to web
+//  → Choose the "Data" tab → CSV → Copy the URL
+// ============================================================
+const CSV_URL = 'PASTE_YOUR_PUBLISHED_CSV_URL_HERE';
+
+
+// ── Column mapping (header row in sheet → field keys) ────
+const COL_MAP = {
+  'Supplier':           'supplier',
+  'Product Name':       'product',
+  'Product Code':       'code',
+  'Stock Category':     'category',
+  'Sub Stock Category': 'subcategory',
+  'Price':              'price',
+  'Pack Size':          'pack',
+  'Unit Measure':       'measure',
+  'Unit Cost':          'unitcost',
+  'Last Update':        'lastupdate',
+  'Area':               'area',
+};
+
+
+// ── State ────────────────────────────────────────────────
+let allProducts  = [];
+let filters = {
+  area:        'all',
+  search:      '',
+  supplier:    new Set(),   // empty = all selected
+  category:    new Set(),
+  subcategory: new Set(),
+};
+let sortLevels = [];   // [{field, dir}]
+let availableOptions = { supplier: [], category: [], subcategory: [] };
+
+
+// ── Boot ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', loadData);
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.filter-group') && !e.target.closest('.sort-wrap')) {
+    closeAllDropdowns();
+  }
+});
+
+
+// ── Data Loading ─────────────────────────────────────────
+async function loadData() {
+  setLoading(true);
+  setError(null);
+
+  try {
+    const resp = await fetch(CSV_URL + '&t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    allProducts = parseCSV(text);
+
+    if (allProducts.length === 0) throw new Error('No data rows found in sheet.');
+
+    buildFilterOptions();
+    buildSortUI();
+    render();
+
+    // sync time
+    const now = new Date();
+    document.getElementById('sync-label').textContent =
+      'Fetched ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('sync-dot').className = 'sync-dot live';
+
+  } catch (err) {
+    setError('Could not load data: ' + err.message +
+      '. Check that CSV_URL is set and the sheet is published.');
+    document.getElementById('sync-dot').className = 'sync-dot error';
+    document.getElementById('sync-label').textContent = 'Load failed';
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function refreshData() {
+  const btn = document.getElementById('refresh-btn');
+  const icon = document.getElementById('refresh-icon');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  await loadData();
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+}
+
+
+// ── CSV Parser ────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+
+  const headers = parseCSVRow(lines[0]);
+  const products = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVRow(lines[i]);
+    if (vals.every(v => v === '')) continue;
+    const obj = {};
+    headers.forEach((h, idx) => {
+      const key = COL_MAP[h.trim()] || h.trim().toLowerCase().replace(/\s+/g, '_');
+      obj[key] = (vals[idx] || '').trim();
+    });
+    products.push(obj);
+  }
+
+  return products;
+}
+
+function parseCSVRow(line) {
+  const result = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+      else inQuote = !inQuote;
+    } else if (c === ',' && !inQuote) {
+      result.push(cur); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+
+// ── Filter Option Builder ─────────────────────────────────
+function buildFilterOptions() {
+  ['supplier','category','subcategory'].forEach(key => {
+    const vals = [...new Set(allProducts.map(p => p[key]).filter(Boolean))].sort();
+    availableOptions[key] = vals;
+    renderDropdownItems(key, vals);
+  });
+}
+
+function renderDropdownItems(key, vals) {
+  const container = document.getElementById('dd-' + key + '-items');
+  container.innerHTML = vals.map(v => `
+    <label class="dropdown-item">
+      <input type="checkbox" data-key="${key}" value="${esc(v)}"
+        ${filters[key].size === 0 || filters[key].has(v) ? 'checked' : ''}
+        onchange="onFilterChange('${key}', '${esc(v)}', this.checked)">
+      <span>${esc(v)}</span>
+    </label>
+  `).join('');
+}
+
+function filterDropdownItems(ddId, query) {
+  const items = document.querySelectorAll('#' + ddId + '-items .dropdown-item');
+  const q = query.toLowerCase();
+  items.forEach(item => {
+    item.style.display = item.querySelector('span').textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+
+// ── Filter Interactions ───────────────────────────────────
+function setArea(area) {
+  filters.area = area;
+  document.querySelectorAll('.area-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.area === area);
+  });
+  render();
+}
+
+function onSearch(val) {
+  filters.search = val;
+  render();
+}
+
+function onFilterChange(key, val, checked) {
+  const all = availableOptions[key];
+
+  // If currently "all selected" (size 0), clicking unchecks means we
+  // want all EXCEPT this one selected.
+  if (filters[key].size === 0) {
+    if (!checked) {
+      filters[key] = new Set(all.filter(v => v !== val));
+    }
+    // if checked and size is 0, it's already all-on — no change
+  } else {
+    if (checked) filters[key].add(val);
+    else         filters[key].delete(val);
+    // if all selected, reset to "all" (size 0)
+    if (filters[key].size === all.length) filters[key] = new Set();
+  }
+
+  updateFilterButton(key);
+  render();
+}
+
+function selectAll(key) {
+  filters[key] = new Set();
+  renderDropdownItems(key, availableOptions[key]);
+  updateFilterButton(key);
+  render();
+}
+
+function clearFilter(key) {
+  filters[key] = new Set(['__none__']); // nothing selected
+  renderDropdownItems(key, availableOptions[key]);
+  // uncheck all
+  document.querySelectorAll(`#dd-${key}-items input`).forEach(i => i.checked = false);
+  updateFilterButton(key);
+  render();
+}
+
+function removeFilterValue(key, val) {
+  if (filters[key].size === 0) {
+    // was "all" — remove this one
+    filters[key] = new Set(availableOptions[key].filter(v => v !== val));
+  } else {
+    filters[key].delete(val);
+  }
+  if (filters[key].size === availableOptions[key].length) filters[key] = new Set();
+  renderDropdownItems(key, availableOptions[key]);
+  updateFilterButton(key);
+  render();
+}
+
+function updateFilterButton(key) {
+  const count = document.getElementById('fc-' + key);
+  const btn   = document.querySelector(`#fg-${key} .filter-btn`);
+  const n = filters[key].size;
+
+  if (n === 0 || filters[key].has('__none__')) {
+    count.style.display = 'none';
+    btn.classList.remove('has-selection');
+  } else {
+    count.textContent  = n;
+    count.style.display = 'inline-block';
+    btn.classList.add('has-selection');
+  }
+}
+
+
+// ── Sort Builder ──────────────────────────────────────────
+const SORT_FIELDS = [
+  { value: 'supplier',   label: 'Supplier'    },
+  { value: 'product',    label: 'Product Name' },
+  { value: 'code',       label: 'Product Code' },
+  { value: 'category',   label: 'Category'    },
+  { value: 'subcategory',label: 'Sub Category' },
+  { value: 'price',      label: 'Price'       },
+  { value: 'pack',       label: 'Pack Size'   },
+  { value: 'unitcost',   label: 'Unit Cost'   },
+  { value: 'lastupdate', label: 'Last Update' },
+  { value: 'area',       label: 'Area'        },
+];
+
+function buildSortUI() {
+  if (sortLevels.length === 0) {
+    sortLevels = [{ field: 'supplier', dir: 'asc' }];
+  }
+  renderSortRows();
+}
+
+function renderSortRows() {
+  const container = document.getElementById('sort-rows');
+  container.innerHTML = sortLevels.map((lvl, i) => `
+    <div class="sort-row">
+      <select onchange="setSortField(${i}, this.value)">
+        ${SORT_FIELDS.map(f => `<option value="${f.value}" ${f.value === lvl.field ? 'selected' : ''}>${f.label}</option>`).join('')}
+      </select>
+      <button class="sort-dir-btn ${lvl.dir}" onclick="toggleSortDir(${i})">
+        ${lvl.dir === 'asc' ? '▲ ASC' : '▼ DESC'}
+      </button>
+      ${sortLevels.length > 1 ? `<button class="sort-remove" onclick="removeSortLevel(${i})" title="Remove">×</button>` : '<div style="width:24px"></div>'}
+    </div>
+  `).join('');
+
+  document.getElementById('add-sort-btn').disabled = sortLevels.length >= 3;
+  render();
+}
+
+function setSortField(i, val)  { sortLevels[i].field = val; renderSortRows(); }
+function toggleSortDir(i)      { sortLevels[i].dir = sortLevels[i].dir === 'asc' ? 'desc' : 'asc'; renderSortRows(); }
+function addSortLevel()        { if (sortLevels.length < 3) { sortLevels.push({ field: 'product', dir: 'asc' }); renderSortRows(); } }
+function removeSortLevel(i)    { sortLevels.splice(i, 1); renderSortRows(); }
+
+
+// ── Core Render ───────────────────────────────────────────
+function render() {
+  let products = allProducts;
+
+  // Area
+  if (filters.area !== 'all') {
+    products = products.filter(p => (p.area || '').toLowerCase() === filters.area);
+  }
+
+  // Multi-select filters
+  ['supplier','category','subcategory'].forEach(key => {
+    const sel = filters[key];
+    if (sel.has('__none__')) { products = []; return; }
+    if (sel.size > 0) {
+      products = products.filter(p => sel.has(p[key]));
+    }
+  });
+
+  // Search
+  const q = filters.search.trim().toLowerCase();
+  if (q) {
+    products = products.filter(p =>
+      (p.product    || '').toLowerCase().includes(q) ||
+      (p.supplier   || '').toLowerCase().includes(q) ||
+      (p.code       || '').toLowerCase().includes(q) ||
+      (p.category   || '').toLowerCase().includes(q) ||
+      (p.subcategory|| '').toLowerCase().includes(q)
+    );
+  }
+
+  // Sort
+  products = [...products].sort((a, b) => {
+    for (const lvl of sortLevels) {
+      const av = a[lvl.field] || '';
+      const bv = b[lvl.field] || '';
+      const numA = parseFloat(av.toString().replace(/[^0-9.]/g, ''));
+      const numB = parseFloat(bv.toString().replace(/[^0-9.]/g, ''));
+      let cmp;
+      if (!isNaN(numA) && !isNaN(numB)) {
+        cmp = numA - numB;
+      } else {
+        cmp = av.toString().localeCompare(bv.toString());
+      }
+      if (cmp !== 0) return lvl.dir === 'asc' ? cmp : -cmp;
+    }
+    return 0;
+  });
+
+  renderTable(products, q);
+  renderTags();
+  updateCount(products.length);
+  updatePrintMeta();
+}
+
+function renderTable(products, q) {
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+
+  if (products.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.add('show');
+    return;
+  }
+  empty.classList.remove('show');
+
+  tbody.innerHTML = products.map(p => `
+    <tr>
+      <td class="td-supplier">${highlight(p.supplier || '', q)}</td>
+      <td class="td-product">${highlight(p.product || '', q)}</td>
+      <td class="td-code">${highlight(p.code || '', q)}</td>
+      <td class="td-price">${formatPrice(p.price, 2)}</td>
+      <td class="td-pack">${esc(p.pack || '')}</td>
+      <td class="td-measure">${esc(p.measure || '')}</td>
+      <td class="td-unitcost">${formatPrice(p.unitcost, 4)}</td>
+      <td class="td-date">${esc(p.lastupdate || '')}</td>
+    </tr>
+  `).join('');
+}
+
+function renderTags() {
+  const container = document.getElementById('filter-tags');
+  const tags = [];
+
+  if (filters.search) {
+    tags.push(`<div class="tag">Search: "${esc(filters.search)}" <button class="tag-x" onclick="clearSearch()">×</button></div>`);
+  }
+  if (filters.area !== 'all') {
+    tags.push(`<div class="tag">Area: ${filters.area} <button class="tag-x" onclick="setArea('all')">×</button></div>`);
+  }
+
+  ['supplier','category','subcategory'].forEach(key => {
+    const label = { supplier: 'Supplier', category: 'Category', subcategory: 'Sub Cat' }[key];
+    if (filters[key].has('__none__')) {
+      tags.push(`<div class="tag">${label}: none <button class="tag-x" onclick="selectAll('${key}')">×</button></div>`);
+    } else if (filters[key].size > 0) {
+      filters[key].forEach(v => {
+        tags.push(`<div class="tag">${label}: ${esc(v)} <button class="tag-x" onclick="removeFilterValue('${key}','${esc(v)}')">×</button></div>`);
+      });
+    }
+  });
+
+  if (tags.length > 0) {
+    container.innerHTML = tags.join('') +
+      `<button class="clear-all-btn" onclick="clearAll()">Clear all</button>`;
+    container.style.display = 'flex';
+  } else {
+    container.innerHTML = '';
+    container.style.display = 'none';
+  }
+}
+
+function updateCount(n) {
+  const total = allProducts.length;
+  document.getElementById('results-count').innerHTML =
+    `<strong>${n.toLocaleString()}</strong> of ${total.toLocaleString()} products`;
+}
+
+function updatePrintMeta() {
+  const parts = [];
+  if (filters.area !== 'all') parts.push('Area: ' + filters.area);
+  if (filters.search)         parts.push('Search: "' + filters.search + '"');
+  ['supplier','category','subcategory'].forEach(key => {
+    if (filters[key].size > 0 && !filters[key].has('__none__')) {
+      parts.push([...filters[key]].join(', '));
+    }
+  });
+  const stamp = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  const meta  = parts.length ? parts.join(' · ') + ' · Printed ' + stamp : 'Printed ' + stamp;
+  document.getElementById('print-meta').textContent = meta;
+}
+
+
+// ── Clear helpers ─────────────────────────────────────────
+function clearSearch() {
+  filters.search = '';
+  document.getElementById('search-input').value = '';
+  render();
+}
+
+function clearAll() {
+  filters.search = '';
+  filters.area   = 'all';
+  document.getElementById('search-input').value = '';
+  document.querySelectorAll('.area-btn').forEach(b => b.classList.toggle('active', b.dataset.area === 'all'));
+  ['supplier','category','subcategory'].forEach(key => {
+    filters[key] = new Set();
+    renderDropdownItems(key, availableOptions[key]);
+    updateFilterButton(key);
+  });
+  render();
+}
+
+
+// ── Dropdown helpers ──────────────────────────────────────
+function toggleDropdown(id) {
+  const panel = document.getElementById(id);
+  const isOpen = panel.classList.contains('open');
+  closeAllDropdowns();
+  if (!isOpen) panel.classList.add('open');
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown-panel, .sort-panel').forEach(p => p.classList.remove('open'));
+}
+
+
+// ── Utility ───────────────────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function highlight(str, q) {
+  if (!q) return esc(str);
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+  return esc(str).replace(re, '<mark>$1</mark>');
+}
+
+function formatPrice(val, dp) {
+  if (!val && val !== 0) return '';
+  const n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return esc(val);
+  return '£' + n.toFixed(dp);
+}
+
+
+// ── UI Helpers ────────────────────────────────────────────
+function setLoading(on) {
+  document.getElementById('loading').classList.toggle('hidden', !on);
+}
+
+function setError(msg) {
+  const banner = document.getElementById('error-banner');
+  if (msg) { banner.textContent = msg; banner.classList.add('show'); }
+  else      { banner.classList.remove('show'); }
+}
+</script>
+</body>
+</html>
