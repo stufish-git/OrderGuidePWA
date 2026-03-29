@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v1.1';
+const VERSION = 'v1.2';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 
@@ -128,11 +128,10 @@ function buildOpts() {
 }
 
 function renderDDItems(k) {
-  const allSel = filters[k].size === 0;
   document.getElementById('dl-' + k).innerHTML = opts[k].map(v => `
     <div class="dd-item" onclick="onCheck('${k}','${esc(v)}',!this.querySelector('input').checked);this.querySelector('input').checked=!this.querySelector('input').checked">
       <input type="checkbox" onclick="event.stopPropagation();onCheck('${k}','${esc(v)}',this.checked)"
-        ${allSel || filters[k].has(v) ? 'checked' : ''}>
+        ${filters[k].has(v) ? 'checked' : ''}>
       <span>${esc(v)}</span>
     </div>`).join('');
 }
@@ -158,13 +157,7 @@ function onSearch(v) {
 }
 
 function onCheck(k, v, checked) {
-  const all = opts[k];
-  if (filters[k].size === 0) {
-    if (!checked) filters[k] = new Set(all.filter(x => x !== v));
-  } else {
-    checked ? filters[k].add(v) : filters[k].delete(v);
-    if (filters[k].size === all.length) filters[k] = new Set();
-  }
+  checked ? filters[k].add(v) : filters[k].delete(v);
   updatePill(k);
   render();
 }
@@ -176,17 +169,8 @@ function selAll(k) {
   render();
 }
 
-function selNone(k) {
-  filters[k] = new Set(['__none__']);
-  document.querySelectorAll('#dl-' + k + ' input').forEach(i => i.checked = false);
-  updatePill(k);
-  render();
-}
-
 function removeTag(k, v) {
-  if (filters[k].size === 0) filters[k] = new Set(opts[k].filter(x => x !== v));
-  else filters[k].delete(v);
-  if (filters[k].size === opts[k].length) filters[k] = new Set();
+  filters[k].delete(v);
   renderDDItems(k);
   updatePill(k);
   render();
@@ -263,9 +247,8 @@ function render() {
   if (filters.area !== 'all')
     list = list.filter(p => (p.area || '').toLowerCase() === filters.area);
 
-  // Multi-select filters
+  // Multi-select filters — empty Set means no filter active
   ['supplier', 'category', 'subcategory'].forEach(k => {
-    if (filters[k].has('__none__')) { list = []; return; }
     if (filters[k].size > 0) list = list.filter(p => filters[k].has(p[k]));
   });
 
@@ -344,11 +327,8 @@ function renderTags() {
     tags.push(mkTag('Area: ' + filters.area, `setArea('all')`));
   const labels = { supplier: 'Supplier', category: 'Category', subcategory: 'Sub Cat' };
   ['supplier', 'category', 'subcategory'].forEach(k => {
-    if (filters[k].has('__none__'))
-      tags.push(mkTag(labels[k] + ': none', `selAll('${k}')`));
-    else
-      filters[k].forEach(v =>
-        tags.push(mkTag(labels[k] + ': ' + esc(v), `removeTag('${k}','${esc(v)}')`)));
+    filters[k].forEach(v =>
+      tags.push(mkTag(labels[k] + ': ' + esc(v), `removeTag('${k}','${esc(v)}')`)));
   });
   if (tags.length) {
     bar.innerHTML = tags.join('') +
