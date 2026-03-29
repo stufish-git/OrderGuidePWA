@@ -399,11 +399,16 @@ thead tr { background: var(--bg); }
   z-index: 11;
   background: var(--surface);
 }
+
+/* Corner cell - sticky on BOTH axes */
 thead tr .col-sticky {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 20;
   background: var(--bg);
-  z-index: 13;
-  box-shadow: 2px 0 0 var(--border);
 }
+
 tbody tr:hover .col-sticky { background: var(--surface); }
 .col-sticky::after {
   content: '';
