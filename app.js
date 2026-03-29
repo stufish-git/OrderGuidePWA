@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v2.8';
+const VERSION = 'v2.9';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 
@@ -524,26 +524,28 @@ function setError(m) {
   updateStickyOffset();
 }
 
-// ── Sticky thead offset ───────────────────────────────────
-// Measures every element above the table and sets the CSS
-// variable so thead sticks exactly at the right position.
+// ── Table height calculator ───────────────────────────────
+// Sets .table-wrap height to fill remaining viewport below
+// all the fixed/sticky elements above it. This makes
+// thead position:sticky;top:0 work reliably inside the
+// scroll container regardless of overflow-x.
 function updateStickyOffset() {
-  const ids = ['error-banner', 'stale-banner'];
-  const selectors = ['header', '.toolbar', '#tag-bar', '.results-bar'];
+  const wrap = document.querySelector('.table-wrap');
+  if (!wrap) return;
 
-  let offset = 0;
+  const selectors = [
+    'header', '.toolbar', '#error-banner', '#stale-banner',
+    '#tag-bar', '.results-bar'
+  ];
 
+  let above = 0;
   selectors.forEach(sel => {
     const el = document.querySelector(sel);
-    if (el) offset += el.offsetHeight;
+    if (el) above += el.offsetHeight;
   });
 
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && el.classList.contains('show')) offset += el.offsetHeight;
-  });
-
-  document.documentElement.style.setProperty('--sticky-top', offset + 'px');
+  const vh = window.innerHeight;
+  wrap.style.height = (vh - above) + 'px';
 }
 
 

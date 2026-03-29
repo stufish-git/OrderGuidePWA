@@ -373,7 +373,10 @@ td.copyable:active { background: #d2e3fc !important; }
 .results-bar strong { color: var(--text2); font-weight: 500; }
 
 /* ── Table ───────────────────────────────────────────────── */
-.table-wrap { padding: 0 16px 48px; overflow-x: auto; }
+.table-wrap {
+  overflow: auto;
+  padding: 0 16px 16px;
+}
 table {
   width: 100%; border-collapse: separate; border-spacing: 0;
   background: var(--surface); border-radius: var(--radius);
@@ -383,7 +386,7 @@ table {
 }
 thead {
   position: sticky;
-  top: var(--sticky-top, 112px);
+  top: 0;
   z-index: 10;
 }
 thead tr { background: var(--bg); }
@@ -474,8 +477,9 @@ footer {
   #print-hdr h1 { font-size: 18px; font-weight: 600; }
   #print-hdr p  { font-size: 11px; color: #666; margin-top: 4px; }
   body { background: white; }
-  .table-wrap { padding: 0; overflow: visible; }
+  .table-wrap { padding: 0; overflow: visible; height: auto !important; }
   table { border: 1px solid #ccc; box-shadow: none; border-radius: 0; }
+  thead { position: static; }
   thead tr { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
   td { padding: 6px 10px; }
 }
