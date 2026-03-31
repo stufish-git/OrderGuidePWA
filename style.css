@@ -409,8 +409,10 @@ th:hover { color: var(--text2); }
   position: sticky;
   left: 0;
   z-index: 11;
-  background: var(--surface);
-  box-shadow: 3px 0 6px rgba(0,0,0,0.08);
+  background: #ffffff;
+  border-right: 1px solid var(--border);
+  min-width: 140px;
+  max-width: 200px;
 }
 
 /* Corner cell — sticky top AND left */
@@ -420,11 +422,11 @@ thead .col-sticky {
   left: 0;
   z-index: 20;
   background: var(--bg);
-  box-shadow: 3px 0 6px rgba(0,0,0,0.08);
+  border-right: 1px solid var(--border);
 }
 
+tbody tr .col-sticky { background: #ffffff; }
 tbody tr:hover .col-sticky { background: #f0f4ff; }
-.col-sticky::after { display: none; }
 
 .sort-arrow {
   display: inline-block;
@@ -606,16 +608,20 @@ footer {
     width: 100%;
   }
 
-  /* Row 3: filter pills full width row */
-  #fw-supplier,
-  #fw-category,
-  #fw-subcategory {
+  /* Row 3: supplier full width */
+  #fw-supplier {
+    grid-column: 1 / 3;
     grid-row: 3;
   }
-  #fw-supplier   { grid-column: 1; }
-  #fw-category   { grid-column: 2; }
+
+  /* Row 4: category and subcategory side by side */
+  #fw-category {
+    grid-column: 1;
+    grid-row: 4;
+  }
   #fw-subcategory {
-    grid-column: 1 / 3;
+    grid-column: 2;
+    grid-row: 4;
   }
 
   /* Make filter pills stretch nicely */
@@ -626,11 +632,12 @@ footer {
     justify-content: space-between;
   }
 
-  /* Sub category dropdown opens upward on mobile */
+  /* Sub category dropdown opens left on mobile */
   #dd-subcategory {
-    left: 0;
+    left: auto;
     right: 0;
     min-width: unset;
+    width: 260px;
   }
 }
 
