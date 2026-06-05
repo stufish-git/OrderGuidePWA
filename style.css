@@ -573,7 +573,7 @@ footer {
 @media (max-width: 680px) {
   .table-wrap { padding: 0 10px; }
   header, .toolbar { padding-left: 12px; padding-right: 12px; }
-  .col-code, .col-date { display: none; }
+  .col-code { display: none; }
   .sort-panel { width: 280px; right: -12px; }
 
   /* Toolbar reflow for mobile */
