@@ -17,19 +17,16 @@
 </head>
 <body>
 
-  <!-- Loading overlay -->
   <div id="loading">
     <div class="loader-wordmark">Order<em>Guide</em></div>
     <div class="loader-dots"><span></span><span></span><span></span></div>
   </div>
 
-  <!-- Print header (visible only when printing) -->
   <div id="print-hdr">
     <h1>Order Guide</h1>
     <p id="print-meta"></p>
   </div>
 
-  <!-- Header — always visible -->
   <header>
     <div class="wordmark">Order<em>Guide</em></div>
     <div class="sync-chip">
@@ -47,113 +44,61 @@
     </button>
   </header>
 
-  <!-- Copy toast — global -->
   <div id="copy-toast"></div>
 
-  <!-- ══════════════════════════════════════════ -->
-  <!-- Order Guide Screen                         -->
-  <!-- ══════════════════════════════════════════ -->
+  <!-- ── Order Guide ── -->
   <div id="screen-og" class="screen">
-
-    <!-- Error banner -->
     <div id="error-banner"></div>
-
-    <!-- Stale data warning -->
     <div id="stale-banner"></div>
-
-    <!-- Toolbar -->
     <div class="toolbar">
-
-      <!-- Area toggle -->
       <div class="seg">
         <button class="seg-btn active" data-area="all"     onclick="setArea('all')">All</button>
         <button class="seg-btn"        data-area="bar"     onclick="setArea('bar')">Bar</button>
         <button class="seg-btn"        data-area="kitchen" onclick="setArea('kitchen')">Kitchen</button>
       </div>
-
-      <!-- Search -->
       <div class="search-wrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="text" id="search-input" placeholder="Search products, codes, suppliers..."
-          oninput="onSearch(this.value)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Search products, codes, suppliers..." oninput="onSearch(this.value)">
         <button class="search-info-btn" onclick="openSearchInfo()" title="Search help">i</button>
       </div>
-
-      <!-- Supplier filter -->
       <div class="filter-wrap" id="fw-supplier">
         <button class="filter-pill" id="fp-supplier" onclick="toggleDD('dd-supplier','fp-supplier')">
-          Supplier
-          <span class="f-badge" id="fb-supplier" style="display:none"></span>
-          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+          Supplier <span class="f-badge" id="fb-supplier" style="display:none"></span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="dropdown" id="dd-supplier">
-          <div class="dd-search">
-            <input type="text" placeholder="Search suppliers..." oninput="ddSearch('dd-supplier',this.value)">
-          </div>
-          <div class="dd-actions">
-            <button class="dd-act" onclick="selAll('supplier')">Clear</button>
-          </div>
+          <div class="dd-search"><input type="text" placeholder="Search suppliers..." oninput="ddSearch('dd-supplier',this.value)"></div>
+          <div class="dd-actions"><button class="dd-act" onclick="selAll('supplier')">Clear</button></div>
           <div class="dd-list" id="dl-supplier"></div>
         </div>
       </div>
-
-      <!-- Category filter -->
       <div class="filter-wrap" id="fw-category">
         <button class="filter-pill" id="fp-category" onclick="toggleDD('dd-category','fp-category')">
-          Category
-          <span class="f-badge" id="fb-category" style="display:none"></span>
-          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+          Category <span class="f-badge" id="fb-category" style="display:none"></span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="dropdown" id="dd-category">
-          <div class="dd-search">
-            <input type="text" placeholder="Search categories..." oninput="ddSearch('dd-category',this.value)">
-          </div>
-          <div class="dd-actions">
-            <button class="dd-act" onclick="selAll('category')">Clear</button>
-          </div>
+          <div class="dd-search"><input type="text" placeholder="Search categories..." oninput="ddSearch('dd-category',this.value)"></div>
+          <div class="dd-actions"><button class="dd-act" onclick="selAll('category')">Clear</button></div>
           <div class="dd-list" id="dl-category"></div>
         </div>
       </div>
-
-      <!-- Sub category filter -->
       <div class="filter-wrap" id="fw-subcategory">
         <button class="filter-pill" id="fp-subcategory" onclick="toggleDD('dd-subcategory','fp-subcategory')">
-          Sub Category
-          <span class="f-badge" id="fb-subcategory" style="display:none"></span>
-          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+          Sub Category <span class="f-badge" id="fb-subcategory" style="display:none"></span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="dropdown" id="dd-subcategory">
-          <div class="dd-search">
-            <input type="text" placeholder="Search..." oninput="ddSearch('dd-subcategory',this.value)">
-          </div>
-          <div class="dd-actions">
-            <button class="dd-act" onclick="selAll('subcategory')">Clear</button>
-          </div>
+          <div class="dd-search"><input type="text" placeholder="Search..." oninput="ddSearch('dd-subcategory',this.value)"></div>
+          <div class="dd-actions"><button class="dd-act" onclick="selAll('subcategory')">Clear</button></div>
           <div class="dd-list" id="dl-subcategory"></div>
         </div>
       </div>
-
-      <!-- Sort -->
       <div class="filter-wrap" style="margin-left:auto">
         <button class="filter-pill" id="fp-sort" onclick="toggleDD('sort-panel','fp-sort')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="6" y1="12" x2="18" y2="12"/>
-            <line x1="9" y1="18" x2="15" y2="18"/>
-          </svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
           <span class="sort-label">Sort</span>
-          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="sort-panel" id="sort-panel">
           <div class="sort-panel-title">Sort order</div>
@@ -161,57 +106,37 @@
           <button class="add-sort" id="add-sort" onclick="addSort()">+ Add level</button>
         </div>
       </div>
-
-    </div><!-- /toolbar -->
-
-    <!-- Active filter tags -->
+    </div>
     <div id="tag-bar"></div>
-
-    <!-- Results count -->
     <div class="results-bar" id="results-bar">Loading...</div>
-
-    <!-- Table -->
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th class="col-product col-sticky" data-col="product" onclick="sortByCol('product')">   Product Name <span class="sort-arrow"></span></th>
-            <th class="col-supplier"            data-col="supplier"   onclick="sortByCol('supplier')">  Supplier     <span class="sort-arrow"></span></th>
-            <th class="col-code"                data-col="code"       onclick="sortByCol('code')">      Code         <span class="sort-arrow"></span></th>
-            <th class="col-category"            data-col="category"   onclick="sortByCol('category')">  Category     <span class="sort-arrow"></span></th>
-            <th class="col-price"               data-col="price"      onclick="sortByCol('price')">     Price        <span class="sort-arrow"></span></th>
-            <th class="col-pack"                data-col="pack"       onclick="sortByCol('pack')">      Pack Size    <span class="sort-arrow"></span></th>
-            <th class="col-measure"             data-col="measure"    onclick="sortByCol('measure')">   Unit         <span class="sort-arrow"></span></th>
-            <th class="col-unitcost"            data-col="unitcost"   onclick="sortByCol('unitcost')">  Unit Cost    <span class="sort-arrow"></span></th>
-            <th class="col-date"                data-col="lastupdate" onclick="sortByCol('lastupdate')">Last Update  <span class="sort-arrow"></span></th>
+            <th class="col-product col-sticky" data-col="product"     onclick="sortByCol('product')">Product Name <span class="sort-arrow"></span></th>
+            <th class="col-supplier"            data-col="supplier"   onclick="sortByCol('supplier')">Supplier <span class="sort-arrow"></span></th>
+            <th class="col-code"                data-col="code"       onclick="sortByCol('code')">Code <span class="sort-arrow"></span></th>
+            <th class="col-category"            data-col="category"   onclick="sortByCol('category')">Category <span class="sort-arrow"></span></th>
+            <th class="col-price"               data-col="price"      onclick="sortByCol('price')">Price <span class="sort-arrow"></span></th>
+            <th class="col-pack"                data-col="pack"       onclick="sortByCol('pack')">Pack Size <span class="sort-arrow"></span></th>
+            <th class="col-measure"             data-col="measure"    onclick="sortByCol('measure')">Unit <span class="sort-arrow"></span></th>
+            <th class="col-unitcost"            data-col="unitcost"   onclick="sortByCol('unitcost')">Unit Cost <span class="sort-arrow"></span></th>
+            <th class="col-date"                data-col="lastupdate" onclick="sortByCol('lastupdate')">Last Update <span class="sort-arrow"></span></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
       </table>
-
       <div id="empty">
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <p>No products found</p>
         <small>Try adjusting your search or filters</small>
       </div>
     </div>
+    <footer><span class="version-badge" id="version-badge"></span></footer>
+  </div>
 
-    <!-- Footer -->
-    <footer>
-      <span class="version-badge" id="version-badge"></span>
-    </footer>
-
-  </div><!-- /screen-og -->
-
-  <!-- ══════════════════════════════════════════ -->
-  <!-- Recipes Screen                             -->
-  <!-- ══════════════════════════════════════════ -->
+  <!-- ── Recipes ── -->
   <div id="screen-recipes" class="screen hidden">
-
-    <!-- Recipe List View -->
     <div id="recipe-list-view">
       <div class="recipe-toolbar">
         <div class="seg" id="recipe-type-seg">
@@ -220,38 +145,27 @@
           <button class="seg-btn"        data-rtype="prep" onclick="setRecipeTypeFilter('prep')">Prep</button>
         </div>
         <button class="pill" onclick="openNewRecipe()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New
         </button>
       </div>
       <div id="recipe-cards" class="recipe-cards-list"></div>
     </div>
 
-    <!-- Recipe Editor View -->
     <div id="recipe-editor-view" class="hidden">
-
       <div class="editor-header">
         <button class="editor-back" onclick="closeEditor()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <span class="editor-title" id="editor-title">New Recipe</span>
         <button class="editor-delete" id="editor-delete-btn" onclick="confirmDeleteRecipe()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/>
-            <path d="M9 6V4h6v2"/>
-          </svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </div>
 
       <div class="editor-body" id="editor-body">
 
-        <!-- Recipe details -->
+        <!-- Details -->
         <div class="editor-section">
           <input class="editor-name-input" type="text" id="recipe-name-input"
             placeholder="Recipe name" oninput="onEditorNameChange()">
@@ -261,17 +175,29 @@
             <button class="type-btn" data-type="prep" onclick="setRecipeType('prep')">Prep</button>
           </div>
 
+          <!-- Dish fields -->
           <div id="dish-fields">
+            <div class="editor-field-row" id="category-row">
+              <label>Category</label>
+              <div class="editor-field-input-wrap">
+                <div class="editor-type-toggle" style="flex:1">
+                  <button class="type-btn cat-btn active" data-cat="food" onclick="setRecipeCategory('food')">Food</button>
+                  <button class="type-btn cat-btn" data-cat="drink" onclick="setRecipeCategory('drink')">Drink</button>
+                </div>
+              </div>
+            </div>
             <div class="editor-field-row">
               <label>GP Target</label>
               <div class="editor-field-input-wrap">
-                <input class="editor-field-input" type="number" id="gp-target-input"
-                  value="70" min="0" max="100" step="0.5" oninput="recalcTotals()">
-                <span class="field-unit">%</span>
+                <input type="range" id="gp-target-input" class="gp-slider"
+                  min="0" max="100" step="0.5" value="70"
+                  oninput="onGpSliderChange(this.value)">
+                <span class="gp-value-display" id="gp-value-display">70.0%</span>
               </div>
             </div>
           </div>
 
+          <!-- Prep fields -->
           <div id="prep-fields" class="hidden">
             <div class="editor-field-row">
               <label>Batch Size</label>
@@ -295,22 +221,41 @@
           <div class="section-title">Ingredients</div>
           <div id="ingredient-list"></div>
 
+          <!-- Misc charge row -->
+          <div class="misc-row">
+            <label class="misc-row-label">
+              <input type="checkbox" id="misc-enabled" onchange="recalcTotals()">
+              <span>Misc ingredients</span>
+            </label>
+            <div class="misc-pct-wrap">
+              <input type="number" id="misc-pct-input" class="misc-pct-input"
+                min="0" max="20" step="0.5" value="2" oninput="recalcTotals()">
+              <span class="misc-pct-unit">%</span>
+            </div>
+          </div>
+
           <div class="ingredient-search-wrap">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="ingredient-search" class="ingredient-search-input"
               placeholder="Search products or prep recipes..."
-              oninput="onIngredientSearch(this.value)"
-              autocomplete="off">
+              oninput="onIngredientSearch(this.value)" autocomplete="off">
           </div>
           <div id="ingredient-results" class="ingredient-results hidden"></div>
         </div>
 
         <!-- Totals -->
         <div class="editor-section hidden" id="recipe-totals-section">
-          <div class="section-title">Totals</div>
-          <div id="recipe-totals"></div>
+          <div id="totals-costs"></div>
+          <div id="totals-target"></div>
+          <div id="totals-selling" class="totals-selling-wrap hidden">
+            <div class="selling-label">Your menu price (inc VAT)</div>
+            <div class="selling-input-row">
+              <span class="selling-prefix">&pound;</span>
+              <input type="number" id="selling-price-input" class="selling-price-input"
+                min="0" step="0.01" placeholder="0.00" oninput="recalcTotals()">
+            </div>
+          </div>
+          <div id="totals-actual"></div>
         </div>
 
         <!-- Notes -->
@@ -320,17 +265,99 @@
             placeholder="Optional notes..." rows="3"></textarea>
         </div>
 
-      </div><!-- /editor-body -->
+      </div>
 
       <div class="editor-footer">
         <button class="save-btn" id="save-btn" onclick="saveRecipe()">Save Recipe</button>
       </div>
+    </div>
+  </div>
 
-    </div><!-- /recipe-editor-view -->
+  <!-- ── Settings ── -->
+  <div id="screen-settings" class="screen hidden">
 
-  </div><!-- /screen-recipes -->
+    <!-- Locked -->
+    <div id="settings-locked">
+      <div class="lock-hero">
+        <div class="lock-icon-wrap">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <p class="lock-title">Manager Settings</p>
+        <p class="lock-sub">Enter PIN to unlock</p>
+      </div>
+      <div class="pin-dots" id="pin-dots"></div>
+      <div class="pin-error" id="pin-error">&nbsp;</div>
+      <div class="pin-keypad">
+        <button onclick="pinKey('1')">1</button>
+        <button onclick="pinKey('2')">2</button>
+        <button onclick="pinKey('3')">3</button>
+        <button onclick="pinKey('4')">4</button>
+        <button onclick="pinKey('5')">5</button>
+        <button onclick="pinKey('6')">6</button>
+        <button onclick="pinKey('7')">7</button>
+        <button onclick="pinKey('8')">8</button>
+        <button onclick="pinKey('9')">9</button>
+        <button class="pin-back" onclick="pinBackspace()">&#x232B;</button>
+        <button onclick="pinKey('0')">0</button>
+        <button class="pin-confirm" onclick="pinSubmit()">&#x2713;</button>
+      </div>
+    </div>
 
-  <!-- Qty picker modal -->
+    <!-- Unlocked -->
+    <div id="settings-unlocked" class="hidden">
+      <div class="settings-header-bar">
+        <span>Settings</span>
+        <button onclick="lockSettings()">Lock</button>
+      </div>
+      <div class="settings-body">
+
+        <div class="editor-section" style="margin-top:12px">
+          <div class="section-title">Pricing defaults</div>
+          <div class="settings-field-row">
+            <label>VAT rate</label>
+            <div class="settings-field-right">
+              <input type="number" id="s-vat" min="0" max="100" step="0.5">
+              <span>%</span>
+            </div>
+          </div>
+          <div class="settings-field-row">
+            <label>Misc charge default</label>
+            <div class="settings-field-right">
+              <input type="number" id="s-misc-pct" min="0" max="20" step="0.5">
+              <span>%</span>
+            </div>
+          </div>
+          <div class="settings-field-row" style="border-bottom:none">
+            <label>Misc on for new recipes</label>
+            <label class="ios-toggle">
+              <input type="checkbox" id="s-misc-default">
+              <span class="ios-toggle-track"></span>
+            </label>
+          </div>
+          <button class="save-btn" id="save-settings-btn" onclick="saveSettings()">Save</button>
+        </div>
+
+        <div class="editor-section">
+          <div class="section-title">Change PIN</div>
+          <div class="settings-field-row">
+            <label>Current PIN</label>
+            <input class="settings-pin-input" type="password" id="s-current-pin" maxlength="8" inputmode="numeric">
+          </div>
+          <div class="settings-field-row" style="border-bottom:none">
+            <label>New PIN</label>
+            <input class="settings-pin-input" type="password" id="s-new-pin" maxlength="8" inputmode="numeric" placeholder="4&#x2013;8 digits">
+          </div>
+          <button class="settings-action-btn" onclick="changePin()">Change PIN</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Qty modal -->
   <div id="qty-modal" class="hidden">
     <div class="qty-modal-backdrop" onclick="cancelQty()"></div>
     <div class="qty-modal-box">
@@ -360,8 +387,7 @@
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
         <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
         <rect x="9" y="3" width="6" height="4" rx="1"/>
-        <line x1="9" y1="12" x2="15" y2="12"/>
-        <line x1="9" y1="16" x2="12" y2="16"/>
+        <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/>
       </svg>
       <span>Order Guide</span>
     </button>
@@ -370,6 +396,13 @@
         <path d="M3 11l19-9-9 19-2-8-8-2z"/>
       </svg>
       <span>Recipes</span>
+    </button>
+    <button class="nav-btn" data-tab="settings" onclick="switchTab('settings')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      <span>Settings</span>
     </button>
   </nav>
 
@@ -381,26 +414,11 @@
         <button class="modal-close" onclick="closeSearchInfo()">&#x2715;</button>
       </div>
       <div class="modal-body">
-        <div class="modal-row">
-          <code>gin</code>
-          <span>Finds anything containing those letters — Gin, Sloe Gin, Fingerling</span>
-        </div>
-        <div class="modal-row">
-          <code>"gin"</code>
-          <span>Finds gin as a whole word only — Gin, Sloe Gin, but not Fingerling</span>
-        </div>
-        <div class="modal-row">
-          <code>"sloe gin"</code>
-          <span>Finds that exact phrase only</span>
-        </div>
-        <div class="modal-row">
-          <code>gin tonic</code>
-          <span>Finds rows containing both words, anywhere</span>
-        </div>
-        <div class="modal-row">
-          <code>"gin" tonic</code>
-          <span>Gin as a whole word, tonic anywhere — mix and match</span>
-        </div>
+        <div class="modal-row"><code>gin</code><span>Finds anything containing those letters</span></div>
+        <div class="modal-row"><code>"gin"</code><span>Finds gin as a whole word only</span></div>
+        <div class="modal-row"><code>"sloe gin"</code><span>Finds that exact phrase only</span></div>
+        <div class="modal-row"><code>gin tonic</code><span>Finds rows containing both words</span></div>
+        <div class="modal-row"><code>"gin" tonic</code><span>Gin as a whole word, tonic anywhere</span></div>
       </div>
     </div>
   </div>
