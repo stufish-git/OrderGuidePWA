@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.4';
+const VERSION = 'v4.5';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -356,11 +356,11 @@ function copyCell(val){
   if(!val) return;
   navigator.clipboard.writeText(val).then(()=>showToast('Copied: '+val)).catch(()=>showToast('Could not copy'));
 }
-function showToast(msg){
+function showToast(msg, persist){
   if(copyToastTimer) clearTimeout(copyToastTimer);
   const t=document.getElementById('copy-toast');
   t.textContent=msg; t.classList.add('show');
-  copyToastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+  copyToastTimer=setTimeout(()=>t.classList.remove('show'), persist?8000:2500);
 }
 function openSearchInfo(){document.getElementById('search-modal').classList.add('open');}
 function closeSearchInfo(e){if(!e||e.target===document.getElementById('search-modal'))document.getElementById('search-modal').classList.remove('open');}
@@ -660,6 +660,13 @@ function closeEditor(){
   editorRecipe=null; pendingIngredient=null; ingSearchResults=[];
 }
 
+// Keep allRecipes in sync when items change in the editor so cards update immediately
+function syncRecipeToList(){
+  if(editorRecipe&&editorRecipe.id){
+    allRecipes=allRecipes.map(r=>r.id===editorRecipe.id?JSON.parse(JSON.stringify(editorRecipe)):r);
+  }
+}
+
 // ── Type / Category ───────────────────────────────────────
 function setRecipeType(type,updateState){
   if(updateState!==false&&editorRecipe) editorRecipe.type=type;
@@ -829,6 +836,7 @@ async function removeIngredient(idx){
   }
   editorRecipe.items.splice(idx,1);
   renderIngredientList(); recalcTotals();
+  syncRecipeToList();
 }
 
 // ── Ingredient search ─────────────────────────────────────
@@ -893,6 +901,7 @@ async function confirmQty(){
   document.getElementById('ingredient-results').classList.add('hidden');
   ingSearchResults=[];
   renderIngredientList(); recalcTotals();
+  syncRecipeToList();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -952,7 +961,8 @@ async function saveRecipe(){
       showToast('Recipe saved!');
     }
   } catch(e){
-    showToast('Save failed: '+e.message);
+    console.error('saveRecipe failed:', e);
+    showToast('Save failed \u2014 '+e.message, true);
   } finally {
     btn.disabled=false; btn.textContent='Save Recipe';
   }
