@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.5';
+const VERSION = 'v4.7';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -383,28 +383,31 @@ function switchTab(tab) {
 }
 
 // ══════════════════════════════════════════════════════════
-// API HELPERS
+// API HELPERS — capture raw text so PHP errors don't hide
 // ══════════════════════════════════════════════════════════
-async function apiGet(path){
-  const r=await fetch(API_URL+path,{headers:{'X-API-Key':API_KEY}});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'API '+r.status);}
-  return r.json();
+async function apiCall(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'X-API-Key': API_KEY }
+  };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(API_URL + path, opts);
+  const text = await r.text();
+  console.log('[API ' + method + ' ' + path + '] status=' + r.status + ' body=' + text.substring(0, 200));
+  let data;
+  try { data = JSON.parse(text); } catch(e) {
+    throw new Error('Bad response (' + r.status + '): ' + text.substring(0, 120));
+  }
+  if (!r.ok) throw new Error(data.error || 'API ' + r.status);
+  return data;
 }
-async function apiPost(path,body){
-  const r=await fetch(API_URL+path,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify(body)});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'API '+r.status);}
-  return r.json();
-}
-async function apiPut(path,body){
-  const r=await fetch(API_URL+path,{method:'PUT',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify(body)});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'API '+r.status);}
-  return r.json();
-}
-async function apiDelete(path){
-  const r=await fetch(API_URL+path,{method:'DELETE',headers:{'X-API-Key':API_KEY}});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||'API '+r.status);}
-  return r.json();
-}
+async function apiGet(path)          { return apiCall('GET',    path); }
+async function apiPost(path, body)   { return apiCall('POST',   path, body); }
+async function apiPut(path, body)    { return apiCall('PUT',    path, body); }
+async function apiDelete(path)       { return apiCall('DELETE', path); }
 
 // ══════════════════════════════════════════════════════════
 // SETTINGS TAB
@@ -503,6 +506,44 @@ async function changePin(){
   }
 }
 
+async function runDiagnostics(){
+  const out=document.getElementById('diag-output');
+  if(!out) return;
+  out.innerHTML='Running\u2026';
+  const lines=[];
+
+  const check=async(label,fn)=>{
+    try{
+      const res=await fn();
+      const preview=JSON.stringify(res).substring(0,80);
+      lines.push('<span style="color:var(--green)">\u2713 '+label+'</span> &mdash; '+esc(preview));
+    }catch(e){
+      lines.push('<span style="color:var(--red)">\u2717 '+label+'</span> &mdash; '+esc(e.message));
+    }
+    out.innerHTML=lines.join('<br>');
+  };
+
+  await check('GET /settings',()=>apiGet('/settings'));
+  await check('GET /recipes', ()=>apiGet('/recipes'));
+
+  // Check DB columns exist by creating and immediately deleting a test recipe
+  let testId=null;
+  try{
+    const r=await apiPost('/recipes',{name:'__diag_test__',type:'dish',category:'food',gp_target:70,misc_enabled:1,misc_pct:2,selling_price:null,actual_gp:null,notes:null});
+    testId=r.id;
+    lines.push('<span style="color:var(--green)">\u2713 POST /recipes (DB columns OK)</span>');
+  }catch(e){
+    lines.push('<span style="color:var(--red)">\u2717 POST /recipes &mdash; '+esc(e.message)+'</span>');
+  }
+  out.innerHTML=lines.join('<br>');
+
+  if(testId){
+    try{await apiDelete('/recipes/'+testId);lines.push('<span style="color:var(--green)">\u2713 DELETE /recipes/'+testId+' (cleanup OK)</span>');}
+    catch(e){lines.push('<span style="color:var(--amber)">\u26a0 Cleanup failed (test recipe id '+testId+' left in DB)</span>');}
+    out.innerHTML=lines.join('<br>');
+  }
+}
+
 // ══════════════════════════════════════════════════════════
 // RECIPE LIST
 // ══════════════════════════════════════════════════════════
@@ -512,9 +553,16 @@ async function loadRecipes(){
   try {
     const list=await apiGet('/recipes');
     if(!list.length){allRecipes=[];recipesLoaded=true;renderRecipeList();return;}
-    allRecipes=await Promise.all(list.map(r=>apiGet('/recipes/'+r.id)));
+    // Fetch full details in parallel; don't let one failure kill the whole list
+    allRecipes=await Promise.all(list.map(r=>
+      apiGet('/recipes/'+r.id).catch(e=>{
+        console.error('Failed to load recipe '+r.id+':',e);
+        return Object.assign({},r,{items:[]});
+      })
+    ));
     recipesLoaded=true; renderRecipeList();
   } catch(e){
+    console.error('loadRecipes failed:',e);
     cardsEl.innerHTML='<div class="recipe-list-state error">Could not load recipes: '+esc(e.message)+'</div>';
   }
 }
@@ -936,15 +984,24 @@ async function saveRecipe(){
 
   try {
     if(editorMode==='new'){
+      console.log('[save] Creating recipe, body:', JSON.stringify(body));
       const created=await apiPost('/recipes',body);
+      console.log('[save] Recipe created, id:', created.id, 'items to post:', (editorRecipe.items||[]).length);
+
       for(const item of (editorRecipe.items||[])){
-        await apiPost('/recipes/'+created.id+'/items',{
+        const itemBody={
           item_type:item.item_type,product_name:item.product_name,unit_measure:item.unit_measure,
           quantity:item.quantity,sort_order:item.sort_order||0,
           product_code:item.product_code||null,sub_recipe_id:item.sub_recipe_id||null,
-        });
+        };
+        console.log('[save] Posting item:', itemBody);
+        await apiPost('/recipes/'+created.id+'/items', itemBody);
+        console.log('[save] Item posted OK');
       }
+
+      console.log('[save] Loading full recipe:', created.id);
       const full=await apiGet('/recipes/'+created.id);
+      console.log('[save] Full recipe loaded, items:', (full.items||[]).length);
       editorMode='edit'; editorRecipe=full;
       allRecipes=[full].concat(allRecipes);
       document.getElementById('editor-delete-btn').style.visibility='visible';
@@ -952,8 +1009,10 @@ async function saveRecipe(){
       renderIngredientList(); recalcTotals();
       showToast('Recipe created!');
     } else {
+      console.log('[save] Updating recipe', editorRecipe.id, body);
       await apiPut('/recipes/'+editorRecipe.id,body);
       const full=await apiGet('/recipes/'+editorRecipe.id);
+      console.log('[save] Recipe updated OK');
       editorRecipe=full;
       allRecipes=allRecipes.map(r=>r.id===full.id?full:r);
       document.getElementById('editor-title').textContent=full.name;
@@ -961,8 +1020,8 @@ async function saveRecipe(){
       showToast('Recipe saved!');
     }
   } catch(e){
-    console.error('saveRecipe failed:', e);
-    showToast('Save failed \u2014 '+e.message, true);
+    console.error('[save] FAILED:', e);
+    alert('Save failed:\n\n' + e.message + '\n\nCheck browser console for details (F12 \u2192 Console tab).');
   } finally {
     btn.disabled=false; btn.textContent='Save Recipe';
   }

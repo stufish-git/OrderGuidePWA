@@ -364,7 +364,8 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
 }
 
 /* Locked state */
-#settings-locked { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 16px; overflow-y: auto; min-height: 0; -webkit-overflow-scrolling: touch; }
+#settings-locked { flex: 1; display: flex; flex-direction: column; align-items: center; overflow-y: auto; min-height: 0; -webkit-overflow-scrolling: touch; padding: 20px 16px; }
+.pin-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: auto; width: 100%; padding: 4px 0; }
 .lock-hero { text-align: center; }
 .lock-icon-wrap { width: 56px; height: 56px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: var(--text2); }
 .lock-title { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }

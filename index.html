@@ -278,31 +278,33 @@
 
     <!-- Locked -->
     <div id="settings-locked">
-      <div class="lock-hero">
-        <div class="lock-icon-wrap">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <rect x="3" y="11" width="18" height="11" rx="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
+      <div class="pin-inner">
+        <div class="lock-hero">
+          <div class="lock-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <p class="lock-title">Manager Settings</p>
+          <p class="lock-sub">Enter PIN to unlock</p>
         </div>
-        <p class="lock-title">Manager Settings</p>
-        <p class="lock-sub">Enter PIN to unlock</p>
-      </div>
-      <div class="pin-dots" id="pin-dots"></div>
-      <div class="pin-error" id="pin-error">&nbsp;</div>
-      <div class="pin-keypad">
-        <button onclick="pinKey('1')">1</button>
-        <button onclick="pinKey('2')">2</button>
-        <button onclick="pinKey('3')">3</button>
-        <button onclick="pinKey('4')">4</button>
-        <button onclick="pinKey('5')">5</button>
-        <button onclick="pinKey('6')">6</button>
-        <button onclick="pinKey('7')">7</button>
-        <button onclick="pinKey('8')">8</button>
-        <button onclick="pinKey('9')">9</button>
-        <button class="pin-back" onclick="pinBackspace()">&#x232B;</button>
-        <button onclick="pinKey('0')">0</button>
-        <button class="pin-confirm" onclick="pinSubmit()">&#x2713;</button>
+        <div class="pin-dots" id="pin-dots"></div>
+        <div class="pin-error" id="pin-error">&nbsp;</div>
+        <div class="pin-keypad">
+          <button onclick="pinKey('1')">1</button>
+          <button onclick="pinKey('2')">2</button>
+          <button onclick="pinKey('3')">3</button>
+          <button onclick="pinKey('4')">4</button>
+          <button onclick="pinKey('5')">5</button>
+          <button onclick="pinKey('6')">6</button>
+          <button onclick="pinKey('7')">7</button>
+          <button onclick="pinKey('8')">8</button>
+          <button onclick="pinKey('9')">9</button>
+          <button class="pin-back" onclick="pinBackspace()">&#x232B;</button>
+          <button onclick="pinKey('0')">0</button>
+          <button class="pin-confirm" onclick="pinSubmit()">&#x2713;</button>
+        </div>
       </div>
     </div>
 
@@ -351,6 +353,13 @@
             <input class="settings-pin-input" type="password" id="s-new-pin" maxlength="8" inputmode="numeric" placeholder="4&#x2013;8 digits">
           </div>
           <button class="settings-action-btn" onclick="changePin()">Change PIN</button>
+        </div>
+
+        <div class="editor-section" style="margin-bottom:12px">
+          <div class="section-title">Diagnostics</div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:4px">Tests the API connection and DB schema.</p>
+          <button class="settings-action-btn" onclick="runDiagnostics()">Run API diagnostics</button>
+          <div id="diag-output" style="margin-top:10px;font-size:12px;font-family:var(--mono);line-height:1.7"></div>
         </div>
 
       </div>
