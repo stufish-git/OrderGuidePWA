@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.9';
+const VERSION = 'v4.10';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -383,7 +383,10 @@ function switchTab(tab) {
   const printBtn=document.getElementById('print-btn');
   if(printBtn) printBtn.style.display=tab==='og'?'':'none';
   if(tab==='og') updateStickyOffset();
-  else if(tab==='recipes'&&!recipesLoaded) loadRecipes();
+  else if(tab==='recipes'){
+    if(!recipesLoaded) loadRecipes();
+    else renderRecipeList(); // always re-render from current allRecipes
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -716,7 +719,7 @@ function closeEditor(){
 // Keep allRecipes in sync when items change in the editor so cards update immediately
 function syncRecipeToList(){
   if(editorRecipe&&editorRecipe.id){
-    allRecipes=allRecipes.map(r=>r.id===editorRecipe.id?JSON.parse(JSON.stringify(editorRecipe)):r);
+    allRecipes=allRecipes.map(r=>String(r.id)===String(editorRecipe.id)?JSON.parse(JSON.stringify(editorRecipe)):r);
     renderRecipeList();
   }
 }
@@ -1016,12 +1019,19 @@ async function saveRecipe(){
       renderIngredientList(); recalcTotals();
       showToast('Recipe created!');
     } else {
-      console.log('[save] Updating recipe', editorRecipe.id, body);
+      console.log('[save] Updating recipe id:', editorRecipe.id, 'allRecipes count:', allRecipes.length, 'ids:', allRecipes.map(r=>r.id));
       await apiPut('/recipes/'+editorRecipe.id,body);
       const full=await apiGet('/recipes/'+editorRecipe.id);
-      console.log('[save] Recipe updated OK');
+      console.log('[save] Updated recipe returned, id:', full.id, 'name:', full.name);
       editorRecipe=full;
-      allRecipes=allRecipes.map(r=>r.id===full.id?full:r);
+      const matched = allRecipes.some(r=>String(r.id)===String(full.id));
+      console.log('[save] Recipe found in allRecipes:', matched);
+      if(matched){
+        allRecipes=allRecipes.map(r=>String(r.id)===String(full.id)?full:r);
+      } else {
+        allRecipes=[full,...allRecipes];
+        console.log('[save] Recipe was missing from allRecipes — prepended');
+      }
       renderRecipeList();
       document.getElementById('editor-title').textContent=full.name;
       renderIngredientList(); recalcTotals();
