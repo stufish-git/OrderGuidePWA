@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.16';
+const VERSION = 'v4.17';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -742,9 +742,13 @@ function showEditor(){
 
   renderIngredientList();
   recalcTotals();
-}
 
-function closeEditor(){
+  // Auto-focus name input so keyboard is ready immediately
+  setTimeout(function(){
+    var n=document.getElementById('recipe-name-input');
+    if(n) n.focus();
+  }, 150);
+}
   document.getElementById('recipe-editor-view').classList.add('hidden');
   document.getElementById('recipe-list-view').classList.remove('hidden');
   editorRecipe=null; pendingIngredient=null; ingSearchResults=[];
