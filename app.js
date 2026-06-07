@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.13';
+const VERSION = 'v4.14';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -412,7 +412,11 @@ async function apiCall(method, path, body) {
   if (!r.ok) throw new Error(data.error || 'API ' + r.status);
   return data;
 }
-async function apiGet(path)          { return apiCall('GET',    path); }
+async function apiGet(path){
+  // Append timestamp so every GET is a unique URL — defeats server-side caches (SiteGround SuperCacher etc)
+  const sep = path.includes('?') ? '&' : '?';
+  return apiCall('GET', path + sep + '_=' + Date.now());
+}
 async function apiPost(path, body)   { return apiCall('POST',   path, body); }
 async function apiPut(path, body)    { return apiCall('PUT',    path, body); }
 async function apiDelete(path)       { return apiCall('DELETE', path); }
