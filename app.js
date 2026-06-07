@@ -749,6 +749,8 @@ function showEditor(){
     if(n) n.focus();
   }, 150);
 }
+
+function closeEditor(){
   document.getElementById('recipe-editor-view').classList.add('hidden');
   document.getElementById('recipe-list-view').classList.remove('hidden');
   editorRecipe=null; pendingIngredient=null; ingSearchResults=[];
