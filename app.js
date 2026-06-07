@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.8';
+const VERSION = 'v4.9';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -710,12 +710,14 @@ function closeEditor(){
   document.getElementById('recipe-editor-view').classList.add('hidden');
   document.getElementById('recipe-list-view').classList.remove('hidden');
   editorRecipe=null; pendingIngredient=null; ingSearchResults=[];
+  renderRecipeList();
 }
 
 // Keep allRecipes in sync when items change in the editor so cards update immediately
 function syncRecipeToList(){
   if(editorRecipe&&editorRecipe.id){
     allRecipes=allRecipes.map(r=>r.id===editorRecipe.id?JSON.parse(JSON.stringify(editorRecipe)):r);
+    renderRecipeList();
   }
 }
 
@@ -1008,6 +1010,7 @@ async function saveRecipe(){
       console.log('[save] Full recipe loaded, items:', (full.items||[]).length);
       editorMode='edit'; editorRecipe=full;
       allRecipes=[full].concat(allRecipes);
+      renderRecipeList();
       document.getElementById('editor-delete-btn').style.visibility='visible';
       document.getElementById('editor-title').textContent=full.name;
       renderIngredientList(); recalcTotals();
@@ -1019,6 +1022,7 @@ async function saveRecipe(){
       console.log('[save] Recipe updated OK');
       editorRecipe=full;
       allRecipes=allRecipes.map(r=>r.id===full.id?full:r);
+      renderRecipeList();
       document.getElementById('editor-title').textContent=full.name;
       renderIngredientList(); recalcTotals();
       showToast('Recipe saved!');
