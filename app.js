@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.10';
+const VERSION = 'v4.12';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -384,8 +384,8 @@ function switchTab(tab) {
   if(printBtn) printBtn.style.display=tab==='og'?'':'none';
   if(tab==='og') updateStickyOffset();
   else if(tab==='recipes'){
-    if(!recipesLoaded) loadRecipes();
-    else renderRecipeList(); // always re-render from current allRecipes
+    recipesLoaded=false;
+    loadRecipes();
   }
 }
 
@@ -713,7 +713,9 @@ function closeEditor(){
   document.getElementById('recipe-editor-view').classList.add('hidden');
   document.getElementById('recipe-list-view').classList.remove('hidden');
   editorRecipe=null; pendingIngredient=null; ingSearchResults=[];
-  renderRecipeList();
+  // Always reload from API — guarantees list reflects DB truth
+  recipesLoaded=false;
+  loadRecipes();
 }
 
 // Keep allRecipes in sync when items change in the editor so cards update immediately
@@ -1012,30 +1014,16 @@ async function saveRecipe(){
       const full=await apiGet('/recipes/'+created.id);
       console.log('[save] Full recipe loaded, items:', (full.items||[]).length);
       editorMode='edit'; editorRecipe=full;
-      allRecipes=[full].concat(allRecipes);
-      renderRecipeList();
-      document.getElementById('editor-delete-btn').style.visibility='visible';
-      document.getElementById('editor-title').textContent=full.name;
-      renderIngredientList(); recalcTotals();
       showToast('Recipe created!');
+      closeEditor();
     } else {
-      console.log('[save] Updating recipe id:', editorRecipe.id, 'allRecipes count:', allRecipes.length, 'ids:', allRecipes.map(r=>r.id));
+      console.log('[save] Updating recipe id:', editorRecipe.id);
       await apiPut('/recipes/'+editorRecipe.id,body);
       const full=await apiGet('/recipes/'+editorRecipe.id);
-      console.log('[save] Updated recipe returned, id:', full.id, 'name:', full.name);
+      console.log('[save] Recipe updated OK, id:', full.id);
       editorRecipe=full;
-      const matched = allRecipes.some(r=>String(r.id)===String(full.id));
-      console.log('[save] Recipe found in allRecipes:', matched);
-      if(matched){
-        allRecipes=allRecipes.map(r=>String(r.id)===String(full.id)?full:r);
-      } else {
-        allRecipes=[full,...allRecipes];
-        console.log('[save] Recipe was missing from allRecipes — prepended');
-      }
-      renderRecipeList();
-      document.getElementById('editor-title').textContent=full.name;
-      renderIngredientList(); recalcTotals();
       showToast('Recipe saved!');
+      closeEditor();
     }
   } catch(e){
     console.error('[save] FAILED:', e);
