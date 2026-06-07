@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.18';
+const VERSION = 'v4.19';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -994,11 +994,11 @@ async function confirmQty(){
     product_code:pendingIngredient.type==='product'?(pendingIngredient.code||null):null,
     sub_recipe_id:pendingIngredient.type==='prep'?pendingIngredient.recipeId:null};
   if(editorMode==='edit'&&editorRecipe?.id){
-    try{const created=await apiPost('/recipes/'+editorRecipe.id+'/items',itemBody);editorRecipe.items=(editorRecipe.items||[]).concat([created]);}
+    try{const created=await apiPost('/recipes/'+editorRecipe.id+'/items',itemBody);editorRecipe.items=[created].concat(editorRecipe.items||[]);}
     catch(e){showToast('Could not add: '+e.message);pendingIngredient=null;return;}
   } else {
     if(!editorRecipe.items) editorRecipe.items=[];
-    editorRecipe.items.push(Object.assign({},itemBody,{id:null}));
+    editorRecipe.items.unshift(Object.assign({},itemBody,{id:null}));
   }
   pendingIngredient=null;
   document.getElementById('ingredient-search').value='';
