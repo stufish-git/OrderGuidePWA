@@ -202,7 +202,22 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
   display: flex; flex-direction: column; overflow: hidden; background: var(--bg);
 }
 #recipe-list-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
-.recipe-toolbar { padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.recipe-toolbar {
+  padding: 8px 12px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 7px; flex-shrink: 0;
+}
+.recipe-toolbar .seg { width: 100%; }
+.recipe-toolbar .seg .seg-btn { flex: 1; padding: 0; font-size: 11px; text-align: center; }
+.recipe-new-btn {
+  width: 100%; height: 36px;
+  border: 1.5px solid var(--accent); border-radius: var(--radius-pill);
+  background: var(--accent-bg);
+  font-family: var(--font); font-size: 13.5px; font-weight: 500; color: var(--accent);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.15s;
+}
+.recipe-new-btn:active { background: var(--accent); color: white; }
 .recipe-cards-list { flex: 1; overflow-y: auto; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 .recipe-list-state { text-align: center; padding: 52px 24px; color: var(--text3); font-size: 14px; line-height: 1.6; }
 .recipe-list-state.error { color: var(--red); }
@@ -253,6 +268,43 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
   padding: 4px 12px 6px;
   font-size: 11px; color: var(--text3);
 }
+
+/* Card bin button */
+.card-bin-btn {
+  width: 26px; height: 26px; border: none; background: none;
+  cursor: pointer; color: var(--text3); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0; transition: all 0.15s;
+}
+.card-bin-btn:hover { background: var(--red-bg); color: var(--red); }
+.card-bin-btn:active { transform: scale(0.92); }
+
+/* Delete confirmation modal */
+#del-modal {
+  position: fixed; inset: 0; z-index: 650;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.del-backdrop { flex: 1; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
+.del-sheet {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+  animation: slide-up 0.22s cubic-bezier(0.32,0.72,0,1);
+}
+.del-icon-wrap {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--red-bg); color: var(--red);
+  display: flex; align-items: center; justify-content: center;
+}
+.del-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.del-sub { font-size: 13px; color: var(--text2); line-height: 1.55; }
+.del-sub strong { color: var(--text); }
+.del-actions { display: flex; gap: 10px; }
+.del-cancel { flex: 1; height: 48px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); font-family: var(--font); font-size: 15px; font-weight: 500; color: var(--text2); cursor: pointer; }
+.del-confirm { flex: 1; height: 48px; border: none; border-radius: var(--radius-sm); background: var(--red); font-family: var(--font); font-size: 15px; font-weight: 600; color: white; cursor: pointer; transition: all 0.15s; }
+.del-confirm:hover { background: #a31b18; }
+.del-confirm:active { transform: scale(0.99); }
 
 /* ── Recipe Editor ──────────────────────────────────────── */
 #recipe-editor-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }

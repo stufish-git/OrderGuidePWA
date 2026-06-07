@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.15';
+const VERSION = 'v4.16';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -38,6 +38,9 @@ let editorRecipe      = null;
 let pendingIngredient = null;
 let ingSearchResults  = [];
 const ingQtyTimers    = {};
+
+let pendingDeleteId   = null;
+let pendingDeleteMode = 'list'; // 'list' | 'editor'
 
 const KIND_COLORS = { food:'#f59e0b', drink:'#1a73e8', prep:'#188038' };
 
@@ -637,6 +640,9 @@ function recipeCardHTML(r){
     '<div class="card-main">'+
       '<div class="card-name">'+esc(r.name)+'</div>'+
       '<div class="type-badge '+kind+'">'+kind.toUpperCase()+'</div>'+
+      '<button class="card-bin-btn" onclick="event.stopPropagation();showDeleteModal('+r.id+')" title="Delete recipe" aria-label="Delete '+esc(r.name)+'">'+
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'+
+      '</button>'+
     '</div>'+
     '<div class="card-stats-section">'+statsHtml+'</div>'+
     '<div class="card-footer">'+count+' ingredient'+(count!==1?'s':'')+'</div>'+
@@ -1067,12 +1073,34 @@ async function saveRecipe(){
   }
 }
 
-async function confirmDeleteRecipe(){
-  if(!editorRecipe?.id) return;
-  if(!confirm('Delete "'+editorRecipe.name+'"?\n\nThis cannot be undone.')) return;
+// ── Delete modal (shared by list and editor) ──────────────
+function showDeleteModal(id, fromEditor){
+  const recipe=allRecipes.find(r=>String(r.id)===String(id));
+  if(!recipe) return;
+  pendingDeleteId=id;
+  pendingDeleteMode=fromEditor?'editor':'list';
+  document.getElementById('del-modal-name').textContent=recipe.name;
+  document.getElementById('del-modal').classList.remove('hidden');
+}
+function cancelDeleteModal(){
+  document.getElementById('del-modal').classList.add('hidden');
+  pendingDeleteId=null;
+}
+async function doDeleteRecipe(){
+  if(!pendingDeleteId) return;
+  document.getElementById('del-modal').classList.add('hidden');
+  const id=pendingDeleteId; pendingDeleteId=null;
   try{
-    await apiDelete('/recipes/'+editorRecipe.id);
-    allRecipes=allRecipes.filter(r=>r.id!==editorRecipe.id);
-    showToast('Recipe deleted'); closeEditor(); renderRecipeList();
+    await apiDelete('/recipes/'+id);
+    allRecipes=allRecipes.filter(r=>String(r.id)!==String(id));
+    showToast('Recipe deleted');
+    if(pendingDeleteMode==='editor') closeEditor();
+    else renderRecipeList();
   } catch(e){ showToast('Delete failed: '+e.message); }
+}
+
+// Editor delete button calls this
+function confirmDeleteRecipe(){
+  if(!editorRecipe?.id) return;
+  showDeleteModal(editorRecipe.id, true);
 }

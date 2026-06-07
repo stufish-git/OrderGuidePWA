@@ -145,9 +145,9 @@
           <button class="seg-btn"        data-rtype="drink" onclick="setRecipeTypeFilter('drink')">Drink</button>
           <button class="seg-btn"        data-rtype="prep"  onclick="setRecipeTypeFilter('prep')">Prep</button>
         </div>
-        <button class="pill" onclick="openNewRecipe()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New
+        <button class="recipe-new-btn" onclick="openNewRecipe()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Recipe
         </button>
       </div>
       <div id="recipe-cards" class="recipe-cards-list"></div>
@@ -359,6 +359,27 @@
           <div id="diag-output" style="margin-top:10px;font-size:12px;font-family:var(--mono);line-height:1.7"></div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirmation modal -->
+  <div id="del-modal" class="hidden">
+    <div class="del-backdrop" onclick="cancelDeleteModal()"></div>
+    <div class="del-sheet">
+      <div class="del-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="del-title">Delete recipe?</div>
+        <div class="del-sub">This will permanently delete <strong id="del-modal-name"></strong> and all its ingredients. This cannot be undone.</div>
+      </div>
+      <div class="del-actions">
+        <button class="del-cancel" onclick="cancelDeleteModal()">Cancel</button>
+        <button class="del-confirm" onclick="doDeleteRecipe()">Delete</button>
       </div>
     </div>
   </div>
