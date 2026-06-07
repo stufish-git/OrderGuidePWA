@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.17';
+const VERSION = 'v4.18';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -808,7 +808,7 @@ function onEditorNameChange(){
 function renderIngredientList(){
   const listEl=document.getElementById('ingredient-list');
   const items=editorRecipe?editorRecipe.items||[]:[];
-  if(!items.length){listEl.innerHTML='<div class="ing-empty">No ingredients added yet</div>';return;}
+  if(!items.length){listEl.innerHTML='<div class="ing-empty">Search above to add ingredients</div>';return;}
   listEl.innerHTML=items.map(function(item,idx){
     const uc=item.item_type==='product'?lookupUnitCost(item.product_code,item.product_name):getPrepCostPerUnit(item.sub_recipe_id,allRecipes);
     const qty=parseFloat(item.quantity)||0;
@@ -1006,6 +1006,12 @@ async function confirmQty(){
   ingSearchResults=[];
   renderIngredientList(); recalcTotals();
   syncRecipeToList();
+
+  // Return focus to search so next ingredient can be typed immediately
+  setTimeout(function(){
+    var s=document.getElementById('ingredient-search');
+    if(s) s.focus();
+  }, 80);
 }
 
 // ══════════════════════════════════════════════════════════

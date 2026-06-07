@@ -214,9 +214,8 @@
         <!-- Ingredients -->
         <div class="editor-section editor-section-ingredients">
           <div class="section-title">Ingredients</div>
-          <div id="ingredient-list"></div>
 
-          <!-- Misc charge row -->
+          <!-- Misc charge — section-level setting -->
           <div class="misc-row">
             <label class="misc-row-label">
               <input type="checkbox" id="misc-enabled" onchange="recalcTotals()">
@@ -229,6 +228,7 @@
             </div>
           </div>
 
+          <!-- Search pinned at top — refocused after every addition -->
           <div class="ingredient-search-wrap">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="ingredient-search" class="ingredient-search-input"
@@ -236,6 +236,9 @@
               oninput="onIngredientSearch(this.value)" autocomplete="off">
           </div>
           <div id="ingredient-results" class="ingredient-results hidden"></div>
+
+          <!-- Ingredient list builds downward below search -->
+          <div id="ingredient-list"></div>
         </div>
 
         <!-- Totals -->

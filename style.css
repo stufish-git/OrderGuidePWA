@@ -385,6 +385,7 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
 
 /* Ingredient list */
 #ingredient-list { display: flex; flex-direction: column; }
+#ingredient-list:not(:empty) { border-top: 1px solid var(--border2); margin-top: 2px; padding-top: 2px; }
 .ing-empty { text-align: center; font-size: 13px; color: var(--text3); padding: 8px 0 4px; }
 .ingredient-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border2); }
 .ingredient-row:last-child { border-bottom: none; }
@@ -400,8 +401,8 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
 .ing-remove:hover { background: var(--red-bg); color: var(--red); }
 .ing-prep-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; padding: 1px 5px; background: var(--green-bg); color: var(--green); border-radius: 20px; text-transform: uppercase; vertical-align: middle; margin-left: 4px; }
 
-/* Misc row */
-.misc-row { display: flex; align-items: center; gap: 10px; padding: 8px 0 2px; border-top: 1px solid var(--border2); }
+/* Misc row — sits at top of ingredients section */
+.misc-row { display: flex; align-items: center; gap: 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border2); }
 .misc-row-label { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px; color: var(--text2); cursor: pointer; }
 .misc-row-label input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
 .misc-pct-wrap { display: flex; align-items: center; gap: 4px; }
