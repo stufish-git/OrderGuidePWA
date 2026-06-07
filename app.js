@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.12';
+const VERSION = 'v4.13';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -395,6 +395,7 @@ function switchTab(tab) {
 async function apiCall(method, path, body) {
   const opts = {
     method,
+    cache: 'no-store',          // always go to network, never use browser HTTP cache
     headers: { 'X-API-Key': API_KEY }
   };
   if (body !== undefined) {
