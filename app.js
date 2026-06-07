@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.14';
+const VERSION = 'v4.15';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
@@ -33,10 +33,18 @@ let allRecipes        = [];
 let recipesLoaded     = false;
 let recipeTypeFilter  = 'all';
 let editorMode        = 'new';
+let editorKind        = 'food'; // 'food' | 'drink' | 'prep'
 let editorRecipe      = null;
 let pendingIngredient = null;
 let ingSearchResults  = [];
 const ingQtyTimers    = {};
+
+const KIND_COLORS = { food:'#f59e0b', drink:'#1a73e8', prep:'#188038' };
+
+function recipeKind(r){
+  if(!r||r.type==='prep') return 'prep';
+  return r.category==='drink' ? 'drink' : 'food';
+}
 
 // ── Settings State ────────────────────────────────────────
 let settingsUnlocked = false;
@@ -587,7 +595,10 @@ function setRecipeTypeFilter(type){
 
 function renderRecipeList(){
   const cardsEl=document.getElementById('recipe-cards');
-  const list=recipeTypeFilter==='all'?allRecipes:allRecipes.filter(r=>r.type===recipeTypeFilter);
+  let list=allRecipes;
+  if(recipeTypeFilter==='food')  list=list.filter(r=>r.type==='dish'&&(r.category||'food')==='food');
+  else if(recipeTypeFilter==='drink') list=list.filter(r=>r.type==='dish'&&r.category==='drink');
+  else if(recipeTypeFilter==='prep')  list=list.filter(r=>r.type==='prep');
   if(!list.length){
     const msg=allRecipes.length===0?'No recipes yet. Tap <strong>New</strong> to create your first.':'No '+recipeTypeFilter+' recipes.';
     cardsEl.innerHTML='<div class="recipe-list-state">'+msg+'</div>'; return;
@@ -596,33 +607,46 @@ function renderRecipeList(){
 }
 
 function recipeCardHTML(r){
-  const adjustedCost=calcRecipeCost(r,allRecipes);
+  const kind=recipeKind(r);
+  const borderColor=KIND_COLORS[kind]||'var(--border)';
   const count=(r.items||[]).length;
-  const countText=count+' ingredient'+(count!==1?'s':'');
+  const adjCost=calcRecipeCost(r,allRecipes);
   let statsHtml='';
-  if(r.type==='dish'){
+
+  if(kind==='prep'){
+    const batchSize=parseFloat(r.batch_size)||0;
+    const cpu=(batchSize>0&&adjCost>0)?adjCost/batchSize:null;
+    statsHtml=
+      cStat('Batch cost', adjCost>0?'\u00a3'+adjCost.toFixed(2):'\u2014')+
+      cStat('Per '+(r.batch_unit||'unit'), cpu?'\u00a3'+cpu.toFixed(4):'\u2014');
+  } else {
     const vat=parseFloat(appSettings.vat_rate)||20;
     const gp=parseFloat(r.gp_target)||70;
-    const sellExVat=adjustedCost>0?adjustedCost/(1-gp/100):null;
-    const sellIncVat=sellExVat?sellExVat*(1+vat/100):null;
+    const sellIncVat=adjCost>0?(adjCost/(1-gp/100))*(1+vat/100):null;
     const actualSell=parseFloat(r.selling_price)||null;
     const actualGp=parseFloat(r.actual_gp)||null;
+    const gpCol=!actualGp?'var(--text)':actualGp>=(gp-0.5)?'var(--green)':actualGp>=(gp-5)?'var(--amber)':'var(--red)';
+    const priceDisp=actualSell?'\u00a3'+actualSell.toFixed(2):(sellIncVat?'~\u00a3'+sellIncVat.toFixed(2):'\u2014');
     statsHtml=
-      '<div class="card-stat"><span class="card-stat-label">Cost</span><span class="card-stat-value">'+(adjustedCost>0?'\u00a3'+adjustedCost.toFixed(2):'\u2014')+'</span></div>'+
-      '<div class="card-stat"><span class="card-stat-label">Menu price</span><span class="card-stat-value">'+(actualSell?'\u00a3'+actualSell.toFixed(2):(sellIncVat?'~\u00a3'+sellIncVat.toFixed(2):'\u2014'))+'</span></div>'+
-      '<div class="card-stat"><span class="card-stat-label">Actual GP</span><span class="card-stat-value">'+(actualGp?actualGp.toFixed(1)+'%':'\u2014')+'</span></div>';
-  } else {
-    const batchSize=parseFloat(r.batch_size)||0;
-    const cpu=(batchSize>0&&adjustedCost>0)?adjustedCost/batchSize:null;
-    statsHtml=
-      '<div class="card-stat"><span class="card-stat-label">Batch cost</span><span class="card-stat-value">'+(adjustedCost>0?'\u00a3'+adjustedCost.toFixed(2):'\u2014')+'</span></div>'+
-      '<div class="card-stat"><span class="card-stat-label">Per '+(esc(r.batch_unit||'unit'))+'</span><span class="card-stat-value">'+(cpu?'\u00a3'+cpu.toFixed(4):'\u2014')+'</span></div>';
+      cStat('Cost', adjCost>0?'\u00a3'+adjCost.toFixed(2):'\u2014')+
+      cStat('Menu price', priceDisp)+
+      cStatRaw('Actual GP', actualGp?'<span style="color:'+gpCol+'">'+actualGp.toFixed(1)+'%</span>':'\u2014');
   }
-  return '<div class="recipe-card" onclick="openRecipe('+r.id+')">' +
-    '<div class="card-top"><div class="card-name">'+esc(r.name)+'</div><div class="type-badge '+r.type+'">'+r.type.toUpperCase()+'</div></div>' +
-    '<div class="card-stats">'+statsHtml+'</div>' +
-    '<div class="card-count">'+countText+'</div>' +
+
+  return '<div class="recipe-card" onclick="openRecipe('+r.id+')" style="border-left-color:'+borderColor+'">'+
+    '<div class="card-main">'+
+      '<div class="card-name">'+esc(r.name)+'</div>'+
+      '<div class="type-badge '+kind+'">'+kind.toUpperCase()+'</div>'+
+    '</div>'+
+    '<div class="card-stats-section">'+statsHtml+'</div>'+
+    '<div class="card-footer">'+count+' ingredient'+(count!==1?'s':'')+'</div>'+
   '</div>';
+}
+function cStat(label,value){
+  return '<div class="card-stat"><span class="card-stat-label">'+esc(label)+'</span><span class="card-stat-value">'+esc(String(value))+'</span></div>';
+}
+function cStatRaw(label,valueHtml){
+  return '<div class="card-stat"><span class="card-stat-label">'+esc(label)+'</span><span class="card-stat-value">'+valueHtml+'</span></div>';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -659,10 +683,9 @@ function calcRecipeCost(recipe,allRecs,depth){
 // RECIPE EDITOR — OPEN
 // ══════════════════════════════════════════════════════════
 function openNewRecipe(){
-  editorMode='new';
-  const cat='food';
+  editorMode='new'; editorKind='food';
   editorRecipe={
-    id:null,name:'',type:'dish',category:cat,
+    id:null,name:'',type:'dish',category:'food',
     gp_target:70,batch_size:null,batch_unit:'',
     misc_enabled:appSettings.misc_on_default?1:0,
     misc_pct:appSettings.misc_charge_pct||2,
@@ -698,8 +721,9 @@ function showEditor(){
   const gpDisp=document.getElementById('gp-value-display');
   if(gpDisp) gpDisp.textContent=parseFloat(gpVal).toFixed(1)+'%';
 
-  setRecipeType(editorRecipe.type||'dish',false);
-  setRecipeCategory(editorRecipe.category||'food',false);
+  // Derive kind from recipe and set toggle
+  editorKind = recipeKind(editorRecipe);
+  setRecipeKind(editorKind, false);
 
   const delBtn=document.getElementById('editor-delete-btn');
   delBtn.style.visibility=editorMode==='edit'?'visible':'hidden';
@@ -732,23 +756,27 @@ function syncRecipeToList(){
 }
 
 // ── Type / Category ───────────────────────────────────────
-function setRecipeType(type,updateState){
-  if(updateState!==false&&editorRecipe) editorRecipe.type=type;
-  document.querySelectorAll('.type-btn:not(.cat-btn)').forEach(btn=>btn.classList.toggle('active',btn.dataset.type===type));
-  document.getElementById('dish-fields').classList.toggle('hidden',type!=='dish');
-  document.getElementById('prep-fields').classList.toggle('hidden',type!=='prep');
-  document.getElementById('totals-selling').classList.toggle('hidden',type!=='dish');
-  recalcTotals();
-}
-
-function setRecipeCategory(cat,updateState){
-  if(updateState!==false&&editorRecipe) editorRecipe.category=cat;
-  document.querySelectorAll('.cat-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.cat===cat));
-  // Update GP default for new recipes when switching category
-  if(editorMode==='new'){
-    const defaultGp=cat==='drink'?75:70;
+function setRecipeKind(kind,updateState){
+  editorKind=kind;
+  if(updateState!==false&&editorRecipe){
+    editorRecipe.type     = kind==='prep'?'prep':'dish';
+    editorRecipe.category = kind==='prep'?'food':kind;
+  }
+  document.querySelectorAll('.kind-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.kind===kind));
+  const isPrep = kind==='prep';
+  document.getElementById('dish-fields').classList.toggle('hidden',isPrep);
+  document.getElementById('prep-fields').classList.toggle('hidden',!isPrep);
+  document.getElementById('totals-selling').classList.toggle('hidden',isPrep);
+  // Misc defaults by kind
+  const miscEl=document.getElementById('misc-enabled');
+  if(miscEl&&updateState!==false) miscEl.checked=kind==='drink'?false:(appSettings.misc_on_default!==false);
+  // GP default for new recipes
+  if(editorMode==='new'&&updateState!==false){
+    const gp=kind==='drink'?75:70;
     const gpEl=document.getElementById('gp-target-input');
-    if(gpEl){gpEl.value=defaultGp;document.getElementById('gp-value-display').textContent=defaultGp.toFixed(1)+'%';}
+    const gpDisp=document.getElementById('gp-value-display');
+    if(gpEl) gpEl.value=gp;
+    if(gpDisp) gpDisp.textContent=gp.toFixed(1)+'%';
   }
   recalcTotals();
 }
@@ -974,8 +1002,9 @@ async function confirmQty(){
 async function saveRecipe(){
   const name=(document.getElementById('recipe-name-input').value||'').trim();
   if(!name){showToast('Please enter a recipe name');document.getElementById('recipe-name-input').focus();return;}
-  const type   =editorRecipe.type||'dish';
-  const cat    =editorRecipe.category||'food';
+  const kind   = editorKind;
+  const type   = kind==='prep'?'prep':'dish';
+  const cat    = kind==='prep'?'food':kind;
   const gpVal  =parseFloat(document.getElementById('gp-target-input')?.value)||70;
   const bsVal  =parseFloat(document.getElementById('batch-size-input')?.value);
   const buVal  =(document.getElementById('batch-unit-input')?.value||'').trim();
