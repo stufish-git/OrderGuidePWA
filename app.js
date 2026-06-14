@@ -1,17 +1,8 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.19';
+const VERSION = 'v4.20';
 
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ12Nc-aBIdhgsZ2LVvLYz0PytxUhIyoa10ESs7EcOQ_nxIZv3cP1-92Q1mapu5wbBvf6fASMM8ifS/pub?gid=1704018109&single=true&output=csv';
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
-
-// ── Column map ────────────────────────────────────────────
-const COL = {
-  'Supplier':'supplier','Product Name':'product','Product Code':'code',
-  'Stock Category':'category','Sub Stock Category':'subcategory',
-  'Price':'price','Pack Size':'pack','Unit Measure':'measure',
-  'Unit Cost':'unitcost','Last Update':'lastupdate','Area':'area',
-};
 
 // ── OG State ──────────────────────────────────────────────
 let products = [];
@@ -91,6 +82,16 @@ async function loadSettings() {
     appSettings.misc_charge_pct = parseFloat(data.misc_charge_pct) || 2;
     appSettings.misc_on_default = data.misc_on_default === '1' || data.misc_on_default === true;
     localStorage.setItem('og_settings', JSON.stringify(appSettings));
+    // Show last VBA push time in sync label — more meaningful to staff than page-load time
+    if (data.products_last_sync) {
+      const d = new Date(data.products_last_sync.replace(' ', 'T'));
+      const syncEl = document.getElementById('sync-label');
+      if (syncEl && !isNaN(d)) {
+        syncEl.textContent =
+          d.toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) + ' ' +
+          d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+      }
+    }
   } catch(e) { /* use cached/defaults */ }
 }
 
@@ -99,10 +100,22 @@ let initialLoad = true;
 async function loadData() {
   if (initialLoad) document.getElementById('loading').classList.remove('hidden');
   try {
-    const r = await fetch(CSV_URL + '&t=' + Date.now());
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    products = parseCSV(await r.text());
-    if (!products.length) throw new Error('Sheet appears empty');
+    const data = await apiGet('/products');
+    // Remap DB column names to the internal field names used throughout the app
+    products = data.map(p => ({
+      product:     p.product_name             || '',
+      code:        p.product_code             || '',
+      supplier:    p.supplier                 || '',
+      category:    p.category                 || '',
+      subcategory: p.sub_category             || '',
+      price:       p.price    != null ? p.price    : '',
+      pack:        p.pack_size                || '',
+      measure:     p.unit                     || '',
+      unitcost:    p.unit_cost != null ? p.unit_cost : '',
+      lastupdate:  p.last_update              || '',
+      area:        '',  // not in products table
+    }));
+    if (!products.length) throw new Error('No products returned');
     buildOpts(); renderSortRows(); renderColHeaders(); render();
     const t = new Date();
     document.getElementById('sync-label').textContent =
@@ -118,30 +131,6 @@ async function loadData() {
     document.getElementById('loading').classList.add('hidden');
     initialLoad = false;
   }
-}
-
-// ── CSV parser ────────────────────────────────────────────
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
-  const hdrs = csvRow(lines[0]);
-  return lines.slice(1).map(l => {
-    const v = csvRow(l);
-    if (v.every(x => x === '')) return null;
-    const o = {};
-    hdrs.forEach((h,i) => { o[COL[h.trim()]||h.trim()] = (v[i]||'').trim(); });
-    return o;
-  }).filter(Boolean);
-}
-function csvRow(line) {
-  const res=[]; let cur='',q=false;
-  for (let i=0;i<line.length;i++) {
-    const c=line[i];
-    if (c==='"') { if (q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
-    else if (c===','&&!q) { res.push(cur); cur=''; }
-    else cur+=c;
-  }
-  res.push(cur); return res;
 }
 
 // ── Filter options ────────────────────────────────────────
@@ -352,8 +341,7 @@ function checkStaleData() {
   let latest=null;
   products.forEach(p=>{
     if(!p.lastupdate) return;
-    const pts=p.lastupdate.split('/'); if(pts.length!==3) return;
-    const d=new Date(pts[2],pts[1]-1,pts[0]);
+    const d = new Date(p.lastupdate); // ISO format YYYY-MM-DD from DB
     if(!isNaN(d)&&(!latest||d>latest)) latest=d;
   });
   if(!latest) return;
@@ -406,7 +394,7 @@ function switchTab(tab) {
 async function apiCall(method, path, body) {
   const opts = {
     method,
-    cache: 'no-store',          // always go to network, never use browser HTTP cache
+    cache: 'no-store',
     headers: { 'X-API-Key': API_KEY }
   };
   if (body !== undefined) {
@@ -424,7 +412,6 @@ async function apiCall(method, path, body) {
   return data;
 }
 async function apiGet(path){
-  // Append timestamp so every GET is a unique URL — defeats server-side caches (SiteGround SuperCacher etc)
   const sep = path.includes('?') ? '&' : '?';
   return apiCall('GET', path + sep + '_=' + Date.now());
 }
@@ -548,8 +535,8 @@ async function runDiagnostics(){
 
   await check('GET /settings',()=>apiGet('/settings'));
   await check('GET /recipes', ()=>apiGet('/recipes'));
+  await check('GET /products',()=>apiGet('/products'));
 
-  // Check DB columns exist by creating and immediately deleting a test recipe
   let testId=null;
   try{
     const r=await apiPost('/recipes',{name:'__diag_test__',type:'dish',category:'food',gp_target:70,misc_enabled:1,misc_pct:2,selling_price:null,actual_gp:null,notes:null});
@@ -576,7 +563,6 @@ async function loadRecipes(){
   try {
     const list=await apiGet('/recipes');
     if(!list.length){allRecipes=[];recipesLoaded=true;renderRecipeList();return;}
-    // Fetch full details in parallel; don't let one failure kill the whole list
     allRecipes=await Promise.all(list.map(r=>
       apiGet('/recipes/'+r.id).catch(e=>{
         console.error('Failed to load recipe '+r.id+':',e);
@@ -679,7 +665,6 @@ function calcRecipeCost(recipe,allRecs,depth){
     if(item.item_type==='product') total+=qty*lookupUnitCost(item.product_code,item.product_name);
     else if(item.item_type==='prep'&&item.sub_recipe_id) total+=qty*getPrepCostPerUnit(item.sub_recipe_id,allRecs);
   }
-  // Apply this recipe's stored misc charge
   if(recipe.misc_enabled&&parseFloat(recipe.misc_pct)>0)
     total=total*(1+parseFloat(recipe.misc_pct)/100);
   return total;
@@ -727,7 +712,6 @@ function showEditor(){
   const gpDisp=document.getElementById('gp-value-display');
   if(gpDisp) gpDisp.textContent=parseFloat(gpVal).toFixed(1)+'%';
 
-  // Derive kind from recipe and set toggle
   editorKind = recipeKind(editorRecipe);
   setRecipeKind(editorKind, false);
 
@@ -743,7 +727,6 @@ function showEditor(){
   renderIngredientList();
   recalcTotals();
 
-  // Auto-focus name input so keyboard is ready immediately
   setTimeout(function(){
     var n=document.getElementById('recipe-name-input');
     if(n) n.focus();
@@ -754,12 +737,10 @@ function closeEditor(){
   document.getElementById('recipe-editor-view').classList.add('hidden');
   document.getElementById('recipe-list-view').classList.remove('hidden');
   editorRecipe=null; pendingIngredient=null; ingSearchResults=[];
-  // Always reload from API — guarantees list reflects DB truth
   recipesLoaded=false;
   loadRecipes();
 }
 
-// Keep allRecipes in sync when items change in the editor so cards update immediately
 function syncRecipeToList(){
   if(editorRecipe&&editorRecipe.id){
     allRecipes=allRecipes.map(r=>String(r.id)===String(editorRecipe.id)?JSON.parse(JSON.stringify(editorRecipe)):r);
@@ -779,10 +760,8 @@ function setRecipeKind(kind,updateState){
   document.getElementById('dish-fields').classList.toggle('hidden',isPrep);
   document.getElementById('prep-fields').classList.toggle('hidden',!isPrep);
   document.getElementById('totals-selling').classList.toggle('hidden',isPrep);
-  // Misc defaults by kind
   const miscEl=document.getElementById('misc-enabled');
   if(miscEl&&updateState!==false) miscEl.checked=kind==='drink'?false:(appSettings.misc_on_default!==false);
-  // GP default for new recipes
   if(editorMode==='new'&&updateState!==false){
     const gp=kind==='drink'?75:70;
     const gpEl=document.getElementById('gp-target-input');
@@ -834,11 +813,9 @@ function recalcTotals(){
   const items=editorRecipe.items||[];
   const type=editorRecipe.type||'dish';
 
-  // Read misc from UI inputs (live values, not stored)
   const miscEnabled=document.getElementById('misc-enabled')?.checked;
   const miscPct=parseFloat(document.getElementById('misc-pct-input')?.value)||0;
 
-  // Raw ingredient cost (prep items use their stored misc via getPrepCostPerUnit)
   let rawCost=0;
   for(const item of items){
     const qty=parseFloat(item.quantity)||0;
@@ -852,7 +829,6 @@ function recalcTotals(){
   if(!items.length){section.classList.add('hidden');return;}
   section.classList.remove('hidden');
 
-  // ── Costs block ───────────────────────────────────────
   let costsHtml='<div class="totals-sub-label">Costs</div>';
   if(miscEnabled&&miscAmt>0){
     costsHtml+=tRow('Ingredients','\u00a3'+rawCost.toFixed(2));
@@ -868,7 +844,6 @@ function recalcTotals(){
     const vat=parseFloat(appSettings.vat_rate)||20;
     const gpTarget=parseFloat(document.getElementById('gp-target-input')?.value)||70;
 
-    // ── Target block ────────────────────────────────────
     let targetHtml='';
     if(adjCost>0){
       const tExVat=adjCost/(1-gpTarget/100);
@@ -880,7 +855,6 @@ function recalcTotals(){
     document.getElementById('totals-target').innerHTML=targetHtml;
     document.getElementById('totals-selling').classList.remove('hidden');
 
-    // ── Actual block ────────────────────────────────────
     const sellPrice=parseFloat(document.getElementById('selling-price-input')?.value)||0;
     let actualHtml='';
     if(sellPrice>0&&adjCost>0){
@@ -903,7 +877,6 @@ function recalcTotals(){
     document.getElementById('totals-actual').innerHTML=actualHtml;
 
   } else {
-    // Prep — no VAT, no selling price
     document.getElementById('totals-target').innerHTML='';
     document.getElementById('totals-selling').classList.add('hidden');
     const batchSize=parseFloat(document.getElementById('batch-size-input')?.value)||0;
@@ -1007,7 +980,6 @@ async function confirmQty(){
   renderIngredientList(); recalcTotals();
   syncRecipeToList();
 
-  // Return focus to search so next ingredient can be typed immediately
   setTimeout(function(){
     var s=document.getElementById('ingredient-search');
     if(s) s.focus();
@@ -1047,32 +1019,22 @@ async function saveRecipe(){
 
   try {
     if(editorMode==='new'){
-      console.log('[save] Creating recipe, body:', JSON.stringify(body));
       const created=await apiPost('/recipes',body);
-      console.log('[save] Recipe created, id:', created.id, 'items to post:', (editorRecipe.items||[]).length);
-
       for(const item of (editorRecipe.items||[])){
         const itemBody={
           item_type:item.item_type,product_name:item.product_name,unit_measure:item.unit_measure,
           quantity:item.quantity,sort_order:item.sort_order||0,
           product_code:item.product_code||null,sub_recipe_id:item.sub_recipe_id||null,
         };
-        console.log('[save] Posting item:', itemBody);
         await apiPost('/recipes/'+created.id+'/items', itemBody);
-        console.log('[save] Item posted OK');
       }
-
-      console.log('[save] Loading full recipe:', created.id);
       const full=await apiGet('/recipes/'+created.id);
-      console.log('[save] Full recipe loaded, items:', (full.items||[]).length);
       editorMode='edit'; editorRecipe=full;
       showToast('Recipe created!');
       closeEditor();
     } else {
-      console.log('[save] Updating recipe id:', editorRecipe.id);
       await apiPut('/recipes/'+editorRecipe.id,body);
       const full=await apiGet('/recipes/'+editorRecipe.id);
-      console.log('[save] Recipe updated OK, id:', full.id);
       editorRecipe=full;
       showToast('Recipe saved!');
       closeEditor();
@@ -1085,7 +1047,7 @@ async function saveRecipe(){
   }
 }
 
-// ── Delete modal (shared by list and editor) ──────────────
+// ── Delete modal ──────────────────────────────────────────
 function showDeleteModal(id, fromEditor){
   const recipe=allRecipes.find(r=>String(r.id)===String(id));
   if(!recipe) return;
@@ -1111,7 +1073,6 @@ async function doDeleteRecipe(){
   } catch(e){ showToast('Delete failed: '+e.message); }
 }
 
-// Editor delete button calls this
 function confirmDeleteRecipe(){
   if(!editorRecipe?.id) return;
   showDeleteModal(editorRecipe.id, true);

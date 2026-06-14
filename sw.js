@@ -1,4 +1,4 @@
-const CACHE_NAME = 'order-guide-v4.19';
+const CACHE_NAME = 'order-guide-v4.20';
 const SHELL = ['./', './index.html', './style.css', './app.js', './manifest.json', './favicon.ico', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -11,7 +11,7 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  if (url.includes('docs.google.com/spreadsheets') || url.includes('orderguideapi.marketplacerest.com')) {
+  if (url.includes('orderguideapi.marketplacerest.com')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;
   }
