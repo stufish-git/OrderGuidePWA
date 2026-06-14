@@ -135,8 +135,8 @@
     <footer><span class="version-badge" id="version-badge"></span></footer>
   </div>
 
-  <!-- ── Recipes ── -->
-  <div id="screen-recipes" class="screen hidden">
+  <!-- ── Builder ── -->
+  <div id="screen-builder" class="screen hidden">
     <div id="recipe-list-view">
       <div class="recipe-toolbar">
         <div class="seg" id="recipe-type-seg">
@@ -157,7 +157,7 @@
       <div class="editor-header" onclick="closeEditor()">
         <svg class="editor-back-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         <div class="editor-title-block">
-          <span class="editor-breadcrumb">Recipes</span>
+          <span class="editor-breadcrumb">Builder</span>
           <span class="editor-title" id="editor-title">New Recipe</span>
         </div>
         <button class="editor-delete" id="editor-delete-btn"
@@ -269,6 +269,38 @@
         <button class="save-btn" id="save-btn" onclick="saveRecipe()">Save Recipe</button>
       </div>
     </div>
+  </div>
+
+  <!-- ── Menu ── -->
+  <div id="screen-menu" class="screen hidden">
+
+    <!-- List view -->
+    <div id="menu-list-view">
+      <div class="menu-toolbar">
+        <div class="seg" id="menu-type-seg">
+          <button class="seg-btn active" data-mtype="all"  onclick="setMenuTypeFilter('all')">All</button>
+          <button class="seg-btn"        data-mtype="dish" onclick="setMenuTypeFilter('dish')">Dishes</button>
+          <button class="seg-btn"        data-mtype="prep" onclick="setMenuTypeFilter('prep')">Prep</button>
+        </div>
+        <div class="menu-sync-row">
+          <span id="menu-sync-label" class="menu-sync-label"></span>
+        </div>
+      </div>
+      <div id="menu-cards" class="recipe-cards-list"></div>
+    </div>
+
+    <!-- Detail view -->
+    <div id="menu-detail-view" class="hidden">
+      <div class="editor-header" onclick="closeMenuDetail()">
+        <svg class="editor-back-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        <div class="editor-title-block">
+          <span class="editor-breadcrumb">Menu</span>
+          <span class="editor-title" id="menu-detail-title"></span>
+        </div>
+      </div>
+      <div class="editor-body" id="menu-detail-body"></div>
+    </div>
+
   </div>
 
   <!-- ── Settings ── -->
@@ -421,11 +453,19 @@
       </svg>
       <span>Order Guide</span>
     </button>
-    <button class="nav-btn" data-tab="recipes" onclick="switchTab('recipes')">
+    <button class="nav-btn" data-tab="menu" onclick="switchTab('menu')">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M3 11l19-9-9 19-2-8-8-2z"/>
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
       </svg>
-      <span>Recipes</span>
+      <span>Menu</span>
+    </button>
+    <button class="nav-btn" data-tab="builder" onclick="switchTab('builder')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+      <span>Builder</span>
     </button>
     <button class="nav-btn" data-tab="settings" onclick="switchTab('settings')">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">

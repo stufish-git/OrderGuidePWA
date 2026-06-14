@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.21';
+const VERSION = 'v4.22';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -39,6 +39,14 @@ function recipeKind(r){
   if(!r||r.type==='prep') return 'prep';
   return r.category==='drink' ? 'drink' : 'food';
 }
+
+// ── Menu State ────────────────────────────────────────────
+// NOTE: Food/Drink filter split requires a Category column in TblReceipeMaster.
+// Currently filtering by All / Dishes / Prep only.
+let allMenuRecipes   = [];
+let menuLoaded       = false;
+let menuTypeFilter   = 'all';
+let menuDetailRecipe = null;
 
 // ── Settings State ────────────────────────────────────────
 let settingsUnlocked = false;
@@ -375,16 +383,18 @@ function switchTab(tab) {
   if(tab===currentTab) return;
   currentTab=tab;
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tab));
-  ['og','recipes','settings'].forEach(s=>{
+  ['og','menu','builder','settings'].forEach(s=>{
     const el=document.getElementById('screen-'+s);
     if(el) el.classList.toggle('hidden',s!==tab);
   });
   const printBtn=document.getElementById('print-btn');
   if(printBtn) printBtn.style.display=tab==='og'?'':'none';
   if(tab==='og') updateStickyOffset();
-  else if(tab==='recipes'){
+  else if(tab==='builder'){
     recipesLoaded=false;
     loadRecipes();
+  } else if(tab==='menu'){
+    if(!menuLoaded) loadMenuRecipes();
   }
 }
 
@@ -536,6 +546,7 @@ async function runDiagnostics(){
   await check('GET /settings',()=>apiGet('/settings'));
   await check('GET /recipes', ()=>apiGet('/recipes'));
   await check('GET /products',()=>apiGet('/products'));
+  await check('GET /menu',    ()=>apiGet('/menu'));
 
   let testId=null;
   try{
@@ -1076,4 +1087,239 @@ async function doDeleteRecipe(){
 function confirmDeleteRecipe(){
   if(!editorRecipe?.id) return;
   showDeleteModal(editorRecipe.id, true);
+}
+
+// ══════════════════════════════════════════════════════════
+// MENU TAB
+// ══════════════════════════════════════════════════════════
+
+async function loadMenuRecipes() {
+  const cardsEl = document.getElementById('menu-cards');
+  if (!cardsEl) return;
+  cardsEl.innerHTML = '<div class="recipe-list-state">Loading\u2026</div>';
+  try {
+    allMenuRecipes = await apiGet('/menu');
+    menuLoaded = true;
+    renderMenuList();
+    // Update sync label from settings if available
+    try {
+      const s = await apiGet('/settings');
+      if (s.menu_last_sync) {
+        const d = new Date(s.menu_last_sync.replace(' ','T'));
+        const lbl = document.getElementById('menu-sync-label');
+        if (lbl && !isNaN(d)) {
+          lbl.textContent = 'Synced ' +
+            d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' ' +
+            d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        }
+      }
+    } catch(e) { /* silent */ }
+  } catch(e) {
+    cardsEl.innerHTML = '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
+  }
+}
+
+function setMenuTypeFilter(type) {
+  menuTypeFilter = type;
+  document.querySelectorAll('#menu-type-seg .seg-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.mtype === type));
+  renderMenuList();
+}
+
+function renderMenuList() {
+  const cardsEl = document.getElementById('menu-cards');
+  if (!cardsEl) return;
+  let list = allMenuRecipes;
+  if      (menuTypeFilter === 'dish') list = list.filter(r => !r.is_prep);
+  else if (menuTypeFilter === 'prep') list = list.filter(r =>  r.is_prep);
+  if (!list.length) {
+    const msg = allMenuRecipes.length === 0
+      ? 'No menu data. Run the Excel Push to App.'
+      : 'No '+menuTypeFilter+' recipes found.';
+    cardsEl.innerHTML = '<div class="recipe-list-state">'+msg+'</div>';
+    return;
+  }
+  cardsEl.innerHTML = list.map(r => menuCardHTML(r)).join('');
+}
+
+function menuCardHTML(r) {
+  const isPrep      = r.is_prep;
+  const borderColor = isPrep ? KIND_COLORS.prep : 'var(--accent)';
+  const kindLabel   = isPrep ? 'PREP' : 'DISH';
+  const kindClass   = isPrep ? 'prep' : 'drink';
+  const cost        = parseFloat(r.total_cost) || 0;
+  const sell        = parseFloat(r.selling_price_inc_vat) || 0;
+  const vat         = parseFloat(appSettings.vat_rate) || 20;
+
+  let statsHtml = '';
+  if (isPrep) {
+    statsHtml = cStat('Batch cost', cost > 0 ? '\u00a3'+cost.toFixed(2) : '\u2014');
+  } else {
+    let gpHtml = '\u2014';
+    if (sell > 0 && cost > 0) {
+      const sellEx = sell / (1 + vat / 100);
+      const gp     = ((sellEx - cost) / sellEx) * 100;
+      const gpCol  = gp >= 69.5 ? 'var(--green)' : gp >= 65 ? 'var(--amber)' : 'var(--red)';
+      gpHtml = '<span style="color:'+gpCol+'">'+gp.toFixed(1)+'%</span>';
+    }
+    statsHtml =
+      cStat('Cost',       cost > 0 ? '\u00a3'+cost.toFixed(2) : '\u2014') +
+      cStat('Menu price', sell > 0 ? '\u00a3'+sell.toFixed(2) : '\u2014') +
+      cStatRaw('GP', gpHtml);
+  }
+
+  const warnIcon = !r.costing_complete
+    ? '<span class="menu-warn-icon" title="Some ingredient costs missing">\u26a0\ufe0f</span>' : '';
+
+  const count = parseInt(r.item_count) || 0;
+
+  return '<div class="recipe-card" onclick="openMenuDetail(\''+esc(r.recipe_code)+'\')" style="border-left-color:'+borderColor+'">' +
+    '<div class="card-main">' +
+      '<div class="card-name">'+esc(r.plu_name)+'</div>' +
+      '<div class="type-badge '+kindClass+'">'+kindLabel+'</div>' +
+      warnIcon +
+    '</div>' +
+    '<div class="card-stats-section">'+statsHtml+'</div>' +
+    (count ? '<div class="card-footer">'+count+' ingredient'+(count!==1?'s':'')+'</div>' : '') +
+  '</div>';
+}
+
+function openMenuDetail(code) {
+  const recipe = allMenuRecipes.find(r => String(r.recipe_code) === String(code));
+  if (!recipe) return;
+  menuDetailRecipe = recipe;
+
+  // Show immediately with loading state, then fill in when items arrive
+  document.getElementById('menu-detail-title').textContent = recipe.plu_name || '';
+  document.getElementById('menu-detail-body').innerHTML =
+    '<div class="recipe-list-state">Loading\u2026</div>';
+  document.getElementById('menu-list-view').classList.add('hidden');
+  document.getElementById('menu-detail-view').classList.remove('hidden');
+
+  apiGet('/menu/'+encodeURIComponent(code)).then(full => {
+    menuDetailRecipe = full;
+    renderMenuDetail();
+  }).catch(e => {
+    document.getElementById('menu-detail-body').innerHTML =
+      '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
+  });
+}
+
+function closeMenuDetail() {
+  document.getElementById('menu-detail-view').classList.add('hidden');
+  document.getElementById('menu-list-view').classList.remove('hidden');
+  menuDetailRecipe = null;
+}
+
+function renderMenuDetail() {
+  if (!menuDetailRecipe) return;
+  const r    = menuDetailRecipe;
+  const isPrep = r.is_prep;
+  const cost   = parseFloat(r.total_cost) || 0;
+  const sell   = parseFloat(r.selling_price_inc_vat) || 0;
+  const vat    = parseFloat(appSettings.vat_rate) || 20;
+
+  document.getElementById('menu-detail-title').textContent = r.plu_name || '';
+
+  let html = '';
+
+  // ── Details section ──────────────────────────────────────
+  html += '<div class="editor-section editor-section-details">';
+  if (r.sku)   html += menuDetailRow('SKU',      r.sku,        true);
+  html +=               menuDetailRow('PLU code', r.recipe_code, true);
+  html +=               menuDetailRow('Type',     isPrep ? 'Prep item' : 'Dish', false);
+  if (!r.costing_complete) {
+    html += '<div class="menu-detail-warn">\u26a0\ufe0f One or more ingredient costs were missing from '+
+            'the order guide when last synced. The total shown is incomplete.</div>';
+  }
+  html += '</div>';
+
+  // ── Costs / GP section ───────────────────────────────────
+  html += '<div class="editor-section" style="border-left-color:var(--green)">';
+  html += '<div class="section-title">Costs'+(isPrep ? '' : ' &amp; GP')+'</div>';
+
+  if (cost > 0) {
+    html += '<div class="totals-sub-label">Ingredient cost</div>';
+    html += tRow('Total cost', '\u00a3'+cost.toFixed(2));
+  }
+
+  if (!isPrep) {
+    if (sell > 0) {
+      const sellEx = sell / (1 + vat / 100);
+      const gp     = cost > 0 ? ((sellEx - cost) / sellEx) * 100 : null;
+      const gpCls  = gp === null ? '' : gp >= 69.5 ? 'ok' : gp >= 65 ? 'warn' : 'bad';
+      html += '<div class="totals-sub-label" style="margin-top:10px">Excel menu price</div>';
+      html += tRow('Inc '+vat+'% VAT', '\u00a3'+sell.toFixed(2));
+      html += tRow('Ex VAT',           '\u00a3'+sellEx.toFixed(2));
+      if (gp !== null) html += tRow('Gross profit', gp.toFixed(1)+'%', gpCls);
+    }
+
+    // Local GP modelling — no write-back
+    html += '<div class="totals-selling-wrap" style="margin-top:12px">';
+    html += '<div class="selling-label">Model a menu price (inc VAT)</div>';
+    html += '<div class="selling-input-row">';
+    html += '<span class="selling-prefix">&pound;</span>';
+    html += '<input type="number" id="menu-sell-input" class="selling-price-input" '+
+            'min="0" step="0.01" placeholder="0.00" oninput="onMenuSellInput(this.value)">';
+    html += '</div></div>';
+    html += '<div id="menu-model-result"></div>';
+  }
+
+  html += '</div>';
+
+  // ── Ingredients section ───────────────────────────────────
+  const items = r.items || [];
+  if (items.length) {
+    html += '<div class="editor-section editor-section-ingredients" style="margin-bottom:12px">';
+    html += '<div class="section-title">Ingredients</div>';
+    html += '<div class="menu-ing-list">';
+    items.forEach(item => {
+      const lc = parseFloat(item.line_cost) || 0;
+      const uc = parseFloat(item.unit_cost) || 0;
+      const prepBadge = item.is_prep_line ? '<span class="ing-prep-badge">PREP</span>' : '';
+      html += '<div class="menu-ing-row">' +
+        '<div class="menu-ing-info">' +
+          '<div class="menu-ing-name">'+esc(item.product_name||'')+prepBadge+'</div>' +
+          '<div class="menu-ing-sub">'+esc(item.supplier||'') +
+            (item.usage_description ? ' \u00b7 '+esc(item.usage_description) : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="menu-ing-costs">' +
+          (uc > 0 ? '<div class="menu-ing-uc">'+esc(item.unit_measure||'')+' @ \u00a3'+uc.toFixed(4)+'</div>' : '') +
+          '<div class="menu-ing-lc">'+(lc > 0 ? '\u00a3'+lc.toFixed(2) : '\u2014')+'</div>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  const body = document.getElementById('menu-detail-body');
+  body.innerHTML = html;
+  body.dataset.cost = cost;
+  body.dataset.vat  = vat;
+}
+
+function menuDetailRow(label, value, mono) {
+  return '<div class="menu-detail-row">'+
+    '<span class="menu-detail-label">'+esc(label)+'</span>'+
+    '<span class="menu-detail-value'+(mono?' mono':'')+'">'+esc(String(value||''))+'</span>'+
+  '</div>';
+}
+
+function onMenuSellInput(val) {
+  const sell  = parseFloat(val) || 0;
+  const body  = document.getElementById('menu-detail-body');
+  const cost  = parseFloat(body ? body.dataset.cost : 0) || 0;
+  const vat   = parseFloat(body ? body.dataset.vat  : 20) || 20;
+  const resEl = document.getElementById('menu-model-result');
+  if (!resEl) return;
+  if (sell <= 0 || cost <= 0) { resEl.innerHTML = ''; return; }
+  const sellEx = sell / (1 + vat / 100);
+  const gp     = ((sellEx - cost) / sellEx) * 100;
+  const gpCls  = gp >= 69.5 ? 'ok' : gp >= 65 ? 'warn' : 'bad';
+  let html = '<div class="totals-sub-label" style="margin-top:8px">Model result</div>';
+  html += tRow('Ex '+vat+'% VAT', '\u00a3'+sellEx.toFixed(2));
+  html += tRow('Gross profit',    gp.toFixed(1)+'%', gpCls);
+  html += tRow('GP cash',         '\u00a3'+(sellEx-cost).toFixed(2));
+  resEl.innerHTML = html;
 }
