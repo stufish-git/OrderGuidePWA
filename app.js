@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.20';
+const VERSION = 'v4.21';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -121,7 +121,7 @@ async function loadData() {
     document.getElementById('sync-label').textContent =
       t.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
     document.getElementById('sync-pip').className = 'sync-pip ok';
-    setError(null); checkStaleData();
+    setError(null);
   } catch(e) {
     setError('Could not load data: ' + e.message);
     document.getElementById('sync-pip').className = 'sync-pip error';
