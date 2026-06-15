@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.25';
+const VERSION = 'v4.26';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -1146,26 +1146,33 @@ async function updateMenuSyncLabel() {
 }
 
 function buildMenuIngredientList() {
-  const names = new Set();
+  const seen  = new Set();
+  const pairs = [];
   allMenuRecipes.forEach(r => {
     (r.items || []).forEach(item => {
-      if (item.product_name && item.product_name.trim())
-        names.add(item.product_name.trim());
+      const name = (item.product_name || '').trim();
+      const sup  = (item.supplier     || '').trim();
+      if (!name) return;
+      const key = name + '|||' + sup;
+      if (!seen.has(key)) { seen.add(key); pairs.push({name, sup, key}); }
     });
   });
-  menuIngredients = [...names].sort((a,b) => a.localeCompare(b));
+  // Sort by product name then supplier
+  pairs.sort((a,b) => a.name.localeCompare(b.name) || a.sup.localeCompare(b.sup));
+  menuIngredients = pairs;
 
   const listEl = document.getElementById('menu-ing-list');
   if (!listEl) return;
-
-  if (!menuIngredients.length) {
+  if (!pairs.length) {
     listEl.innerHTML = '<div style="padding:10px 14px;font-size:13px;color:var(--text3)">No ingredients found</div>';
     return;
   }
-
-  listEl.innerHTML = menuIngredients.map(n =>
-    '<div class="dd-item menu-ing-item'+(menuIngFilter===n?' ing-active':'')+'" onclick="selectMenuIng(\''+esc(n)+'\')">'+
-    '<span>'+esc(n)+'</span>'+
+  listEl.innerHTML = pairs.map(({name, sup, key}) =>
+    '<div class="dd-item menu-ing-item'+(menuIngFilter===key?' ing-active':'')+
+    '" data-key="'+esc(key)+'" onclick="selectMenuIng(\''+esc(key)+'\')">'+
+    '<span class="menu-ing-label">'+esc(name)+
+    (sup ? '<span class="menu-ing-sup"> \u2014 '+esc(sup)+'</span>' : '')+
+    '</span>'+
     '</div>'
   ).join('');
 }
@@ -1184,15 +1191,15 @@ function onMenuSearch(val) {
   renderMenuList();
 }
 
-function selectMenuIng(name) {
-  menuIngFilter = name;
+function selectMenuIng(key) {
+  menuIngFilter = key;
   const badge = document.getElementById('menu-ing-badge');
   const pill  = document.getElementById('menu-ing-pill');
-  if (badge) badge.style.display = name ? 'inline' : 'none';
-  if (pill)  pill.classList.toggle('active', !!name);
-  // Highlight selected row
+  if (badge) badge.style.display = key ? 'inline' : 'none';
+  if (pill)  pill.classList.toggle('active', !!key);
+  // Highlight selected row via data-key
   document.querySelectorAll('.menu-ing-item').forEach(el =>
-    el.classList.toggle('ing-active', el.querySelector('span')?.textContent === name));
+    el.classList.toggle('ing-active', el.dataset.key === key));
   closeAll();
   renderMenuList();
 }
@@ -1245,10 +1252,15 @@ function renderMenuList() {
     );
   }
 
-  // Ingredient filter — only once items are loaded
+  // Ingredient filter — exact match on product_name + supplier
   if (menuIngFilter) {
+    const sepIdx  = menuIngFilter.indexOf('|||');
+    const ingName = menuIngFilter.substring(0, sepIdx);
+    const ingSup  = menuIngFilter.substring(sepIdx + 3);
     list = list.filter(r =>
-      (r.items||[]).some(item => item.product_name === menuIngFilter)
+      (r.items||[]).some(item =>
+        item.product_name === ingName && item.supplier === ingSup
+      )
     );
   }
 
