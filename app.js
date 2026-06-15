@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.26';
+const VERSION = 'v4.28';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -46,7 +46,7 @@ let menuLoaded       = false;
 let menuFullyLoaded  = false;
 let menuTypeFilter   = 'all';
 let menuSearchText   = '';
-let menuIngFilter    = '';
+let menuIngFilters   = new Set(); // composite keys "name|||supplier" — OR logic
 let menuIngredients  = [];
 let menuMiscEnabled  = true;
 let menuDetailRecipe = null;
@@ -78,8 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('resize', updateStickyOffset);
 document.addEventListener('click', e => { if (!e.target.closest('.filter-wrap')) closeAll(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') loadData(); });
-window.addEventListener('focus', loadData);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { loadData(); refreshMenuData(); } });
+window.addEventListener('focus', () => { loadData(); refreshMenuData(); });
 
 // ── Settings load (non-blocking) ──────────────────────────
 async function loadSettings() {
@@ -1094,6 +1094,20 @@ function confirmDeleteRecipe(){
 }
 
 
+// ── Menu background refresh (on focus/visibility) ─────────
+async function refreshMenuData() {
+  if (currentTab !== 'menu' || !menuLoaded) return;
+  try {
+    const freshList = await apiGet('/menu');
+    // Merge: update list-level fields, preserve already-loaded items
+    allMenuRecipes = freshList.map(fresh => {
+      const existing = allMenuRecipes.find(r => r.recipe_code === fresh.recipe_code);
+      return existing ? Object.assign({}, fresh, {items: existing.items}) : fresh;
+    });
+    renderMenuList();
+  } catch(e) { /* silent — don't disrupt UX on background refresh */ }
+}
+
 // ══════════════════════════════════════════════════════════
 // MENU TAB
 // ══════════════════════════════════════════════════════════
@@ -1123,7 +1137,7 @@ async function loadMenuRecipes() {
     allMenuRecipes = full;
     menuFullyLoaded = true;
     buildMenuIngredientList();
-    if (menuIngFilter) renderMenuList(); // re-render if ingredient filter was waiting
+    if (menuIngFilters.size > 0) renderMenuList(); // re-render if ingredient filter was waiting
 
   } catch(e) {
     cardsEl.innerHTML = '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
@@ -1167,14 +1181,17 @@ function buildMenuIngredientList() {
     listEl.innerHTML = '<div style="padding:10px 14px;font-size:13px;color:var(--text3)">No ingredients found</div>';
     return;
   }
-  listEl.innerHTML = pairs.map(({name, sup, key}) =>
-    '<div class="dd-item menu-ing-item'+(menuIngFilter===key?' ing-active':'')+
-    '" data-key="'+esc(key)+'" onclick="selectMenuIng(\''+esc(key)+'\')">'+
-    '<span class="menu-ing-label">'+esc(name)+
-    (sup ? '<span class="menu-ing-sup"> \u2014 '+esc(sup)+'</span>' : '')+
-    '</span>'+
-    '</div>'
-  ).join('');
+  listEl.innerHTML = pairs.map(({name, sup, key}) => {
+    const active  = menuIngFilters.has(key);
+    const checked = active ? ' checked' : '';
+    return '<div class="dd-item menu-ing-item'+(active?' ing-active':'')+
+      '" data-key="'+esc(key)+'" onclick="toggleMenuIng(\''+esc(key)+'\')">'+
+      '<input type="checkbox" class="dd-cb"'+checked+' style="pointer-events:none" tabindex="-1">'+
+      '<span class="menu-ing-label">'+esc(name)+
+      (sup ? '<span class="menu-ing-sup"> \u2014 '+esc(sup)+'</span>' : '')+
+      '</span>'+
+      '</div>';
+  }).join('');
 }
 
 // ── Filters & search ─────────────────────────────────────
@@ -1191,28 +1208,41 @@ function onMenuSearch(val) {
   renderMenuList();
 }
 
-function selectMenuIng(key) {
-  menuIngFilter = key;
+function toggleMenuIng(key) {
+  if (menuIngFilters.has(key)) menuIngFilters.delete(key);
+  else                         menuIngFilters.add(key);
+
+  const count = menuIngFilters.size;
   const badge = document.getElementById('menu-ing-badge');
   const pill  = document.getElementById('menu-ing-pill');
-  if (badge) badge.style.display = key ? 'inline' : 'none';
-  if (pill)  pill.classList.toggle('active', !!key);
-  // Highlight selected row via data-key
-  document.querySelectorAll('.menu-ing-item').forEach(el =>
-    el.classList.toggle('ing-active', el.dataset.key === key));
-  closeAll();
-  renderMenuList();
+  if (badge) { badge.textContent = count || ''; badge.style.display = count ? 'inline' : 'none'; }
+  if (pill)  { pill.classList.toggle('active', count > 0); }
+
+  // Update the ticked row without closing the dropdown
+  document.querySelectorAll('.menu-ing-item').forEach(el => {
+    const k      = el.dataset.key;
+    const active = menuIngFilters.has(k);
+    el.classList.toggle('ing-active', active);
+    const cb = el.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = active;
+  });
+
+  renderMenuList(); // filter updates live behind the open dropdown
 }
 
 function clearMenuIngFilter() {
-  menuIngFilter = '';
+  menuIngFilters.clear();
   const badge     = document.getElementById('menu-ing-badge');
   const pill      = document.getElementById('menu-ing-pill');
   const searchInp = document.getElementById('menu-ing-search');
-  if (badge)     badge.style.display = 'none';
-  if (pill)      pill.classList.remove('active');
+  if (badge)     { badge.textContent = ''; badge.style.display = 'none'; }
+  if (pill)      { pill.classList.remove('active'); }
   if (searchInp) { searchInp.value = ''; ddSearch('menu-ing-dd', ''); }
-  document.querySelectorAll('.menu-ing-item').forEach(el => el.classList.remove('ing-active'));
+  document.querySelectorAll('.menu-ing-item').forEach(el => {
+    el.classList.remove('ing-active');
+    const cb = el.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = false;
+  });
   renderMenuList();
 }
 
@@ -1252,15 +1282,17 @@ function renderMenuList() {
     );
   }
 
-  // Ingredient filter — exact match on product_name + supplier
-  if (menuIngFilter) {
-    const sepIdx  = menuIngFilter.indexOf('|||');
-    const ingName = menuIngFilter.substring(0, sepIdx);
-    const ingSup  = menuIngFilter.substring(sepIdx + 3);
+  // Ingredient filter — OR logic: recipe must contain at least one selected ingredient
+  if (menuIngFilters.size > 0) {
     list = list.filter(r =>
-      (r.items||[]).some(item =>
-        item.product_name === ingName && item.supplier === ingSup
-      )
+      [...menuIngFilters].some(key => {
+        const sepIdx  = key.indexOf('|||');
+        const ingName = key.substring(0, sepIdx);
+        const ingSup  = key.substring(sepIdx + 3);
+        return (r.items||[]).some(item =>
+          item.product_name === ingName && item.supplier === ingSup
+        );
+      })
     );
   }
 
