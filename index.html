@@ -277,12 +277,27 @@
     <!-- List view -->
     <div id="menu-list-view">
       <div class="menu-toolbar">
-        <div class="seg" id="menu-type-seg">
-          <button class="seg-btn active" data-mtype="all"  onclick="setMenuTypeFilter('all')">All</button>
-          <button class="seg-btn"        data-mtype="wet"  onclick="setMenuTypeFilter('wet')">Wet</button>
-          <button class="seg-btn"        data-mtype="dry"  onclick="setMenuTypeFilter('dry')">Dry</button>
-          <button class="seg-btn"        data-mtype="prep" onclick="setMenuTypeFilter('prep')">Prep</button>
+        <!-- Row 1: type filter + misc pill -->
+        <div class="menu-toolbar-top">
+          <div class="seg" id="menu-type-seg">
+            <button class="seg-btn active" data-mtype="all"  onclick="setMenuTypeFilter('all')">All</button>
+            <button class="seg-btn"        data-mtype="wet"  onclick="setMenuTypeFilter('wet')">Wet</button>
+            <button class="seg-btn"        data-mtype="dry"  onclick="setMenuTypeFilter('dry')">Dry</button>
+            <button class="seg-btn"        data-mtype="prep" onclick="setMenuTypeFilter('prep')">Prep</button>
+          </div>
+          <button class="filter-pill" id="menu-misc-btn" onclick="toggleMenuMisc()">Misc 2%</button>
         </div>
+        <!-- Row 2: recipe text search -->
+        <div class="menu-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="menu-search-input" class="menu-search-input"
+            placeholder="Search recipes or SKU&hellip;" oninput="onMenuSearch(this.value)">
+        </div>
+        <!-- Row 3: ingredient filter -->
+        <select id="menu-ing-select" class="menu-ing-select" onchange="onMenuIngFilter(this.value)" disabled>
+          <option value="">All ingredients &mdash; loading&hellip;</option>
+        </select>
+        <!-- Sync label -->
         <div class="menu-sync-row">
           <span id="menu-sync-label" class="menu-sync-label"></span>
         </div>

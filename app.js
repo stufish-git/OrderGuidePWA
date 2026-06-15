@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.23';
+const VERSION = 'v4.24';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -43,7 +43,12 @@ function recipeKind(r){
 // ── Menu State ────────────────────────────────────────────
 let allMenuRecipes   = [];
 let menuLoaded       = false;
+let menuFullyLoaded  = false;
 let menuTypeFilter   = 'all';
+let menuSearchText   = '';
+let menuIngFilter    = '';
+let menuIngredients  = [];
+let menuMiscEnabled  = true;
 let menuDetailRecipe = null;
 
 // ── Settings State ────────────────────────────────────────
@@ -393,6 +398,7 @@ function switchTab(tab) {
     loadRecipes();
   } else if(tab==='menu'){
     if(!menuLoaded) loadMenuRecipes();
+    else updateMenuMiscBtn();
   }
 }
 
@@ -1087,6 +1093,7 @@ function confirmDeleteRecipe(){
   showDeleteModal(editorRecipe.id, true);
 }
 
+
 // ══════════════════════════════════════════════════════════
 // MENU TAB
 // ══════════════════════════════════════════════════════════
@@ -1095,27 +1102,68 @@ async function loadMenuRecipes() {
   const cardsEl = document.getElementById('menu-cards');
   if (!cardsEl) return;
   cardsEl.innerHTML = '<div class="recipe-list-state">Loading\u2026</div>';
+
+  // Preload misc from settings on first load
+  menuMiscEnabled = appSettings.misc_on_default !== false;
+  updateMenuMiscBtn();
+
   try {
+    // Step 1 — load list, render immediately
     allMenuRecipes = await apiGet('/menu');
     menuLoaded = true;
     renderMenuList();
-    // Update sync label from settings if available
-    try {
-      const s = await apiGet('/settings');
-      if (s.menu_last_sync) {
-        const d = new Date(s.menu_last_sync.replace(' ','T'));
-        const lbl = document.getElementById('menu-sync-label');
-        if (lbl && !isNaN(d)) {
-          lbl.textContent = 'Synced ' +
-            d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' ' +
-            d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-        }
-      }
-    } catch(e) { /* silent */ }
+    updateMenuSyncLabel();
+
+    // Step 2 — parallel fetch all items for ingredient filter
+    const ingSel = document.getElementById('menu-ing-select');
+    const full = await Promise.all(allMenuRecipes.map(r =>
+      apiGet('/menu/' + encodeURIComponent(r.recipe_code))
+        .catch(() => Object.assign({}, r, {items:[]}))
+    ));
+    allMenuRecipes = full;
+    menuFullyLoaded = true;
+    buildMenuIngredientList();
+    if (menuIngFilter) renderMenuList(); // re-render if ingredient filter was waiting
+
   } catch(e) {
     cardsEl.innerHTML = '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
   }
 }
+
+async function updateMenuSyncLabel() {
+  try {
+    const s = await apiGet('/settings');
+    if (s.menu_last_sync) {
+      const d   = new Date(s.menu_last_sync.replace(' ','T'));
+      const lbl = document.getElementById('menu-sync-label');
+      if (lbl && !isNaN(d)) {
+        lbl.textContent = 'Synced ' +
+          d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' ' +
+          d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      }
+    }
+  } catch(e) { /* silent */ }
+}
+
+function buildMenuIngredientList() {
+  const names = new Set();
+  allMenuRecipes.forEach(r => {
+    (r.items || []).forEach(item => {
+      if (item.product_name && item.product_name.trim())
+        names.add(item.product_name.trim());
+    });
+  });
+  menuIngredients = [...names].sort((a,b) => a.localeCompare(b));
+  const sel = document.getElementById('menu-ing-select');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">All ingredients</option>' +
+    menuIngredients.map(n => '<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+  sel.disabled = false;
+  if (prev) sel.value = prev; // restore selection if one was pending
+}
+
+// ── Filters & search ─────────────────────────────────────
 
 function setMenuTypeFilter(type) {
   menuTypeFilter = type;
@@ -1124,17 +1172,63 @@ function setMenuTypeFilter(type) {
   renderMenuList();
 }
 
+function onMenuSearch(val) {
+  menuSearchText = val;
+  renderMenuList();
+}
+
+function onMenuIngFilter(val) {
+  menuIngFilter = val;
+  renderMenuList();
+}
+
+function toggleMenuMisc() {
+  menuMiscEnabled = !menuMiscEnabled;
+  updateMenuMiscBtn();
+  renderMenuList();
+  if (menuDetailRecipe) renderMenuDetail();
+}
+
+function updateMenuMiscBtn() {
+  const btn     = document.getElementById('menu-misc-btn');
+  if (!btn) return;
+  const miscPct = parseFloat(appSettings.misc_charge_pct) || 2;
+  btn.textContent = 'Misc ' + miscPct + '%';
+  btn.classList.toggle('active', menuMiscEnabled);
+}
+
+// ── List render ───────────────────────────────────────────
+
 function renderMenuList() {
   const cardsEl = document.getElementById('menu-cards');
   if (!cardsEl) return;
   let list = allMenuRecipes;
+
+  // Type filter
   if      (menuTypeFilter === 'wet')  list = list.filter(r => !r.is_prep && (r.plu_group||'').toLowerCase() === 'wet');
   else if (menuTypeFilter === 'dry')  list = list.filter(r => !r.is_prep && (r.plu_group||'').toLowerCase() === 'dry');
   else if (menuTypeFilter === 'prep') list = list.filter(r =>  r.is_prep);
+
+  // Text search — PLU name and SKU
+  if (menuSearchText.trim()) {
+    const q = menuSearchText.trim().toLowerCase();
+    list = list.filter(r =>
+      (r.plu_name||'').toLowerCase().includes(q) ||
+      (r.sku||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Ingredient filter — only once items are loaded
+  if (menuIngFilter) {
+    list = list.filter(r =>
+      (r.items||[]).some(item => item.product_name === menuIngFilter)
+    );
+  }
+
   if (!list.length) {
     const msg = allMenuRecipes.length === 0
       ? 'No menu data. Run the Excel Push to App.'
-      : 'No '+menuTypeFilter+' recipes found.';
+      : 'No recipes match.';
     cardsEl.innerHTML = '<div class="recipe-list-state">'+msg+'</div>';
     return;
   }
@@ -1143,15 +1237,21 @@ function renderMenuList() {
 
 function menuCardHTML(r) {
   const isPrep      = r.is_prep;
-  const group       = (r.plu_group || '').toLowerCase();
+  const group       = (r.plu_group||'').toLowerCase();
   const borderColor = isPrep ? KIND_COLORS.prep
                     : group === 'dry' ? KIND_COLORS.food
-                    : 'var(--accent)';                          // wet or unknown → blue
+                    : 'var(--accent)';
   const kindLabel   = isPrep ? 'PREP' : group === 'wet' ? 'WET' : group === 'dry' ? 'DRY' : 'DISH';
   const kindClass   = isPrep ? 'prep' : group === 'dry' ? 'dry' : 'wet';
-  const cost        = parseFloat(r.total_cost) || 0;
-  const sell        = parseFloat(r.selling_price_inc_vat) || 0;
-  const vat         = parseFloat(appSettings.vat_rate) || 20;
+
+  // Misc applies to dry and prep only
+  const rawCost   = parseFloat(r.total_cost) || 0;
+  const applyMisc = menuMiscEnabled && (isPrep || group === 'dry');
+  const miscPct   = parseFloat(appSettings.misc_charge_pct) || 2;
+  const cost      = applyMisc ? rawCost * (1 + miscPct / 100) : rawCost;
+
+  const sell = parseFloat(r.selling_price_inc_vat) || 0;
+  const vat  = parseFloat(appSettings.vat_rate) || 20;
 
   let statsHtml = '';
   if (isPrep) {
@@ -1172,7 +1272,6 @@ function menuCardHTML(r) {
 
   const warnIcon = !r.costing_complete
     ? '<span class="menu-warn-icon" title="Some ingredient costs missing">\u26a0\ufe0f</span>' : '';
-
   const count = parseInt(r.item_count) || 0;
 
   return '<div class="recipe-card" onclick="openMenuDetail(\''+esc(r.recipe_code)+'\')" style="border-left-color:'+borderColor+'">' +
@@ -1186,25 +1285,31 @@ function menuCardHTML(r) {
   '</div>';
 }
 
+// ── Detail view ───────────────────────────────────────────
+
 function openMenuDetail(code) {
   const recipe = allMenuRecipes.find(r => String(r.recipe_code) === String(code));
   if (!recipe) return;
   menuDetailRecipe = recipe;
 
-  // Show immediately with loading state, then fill in when items arrive
   document.getElementById('menu-detail-title').textContent = recipe.plu_name || '';
   document.getElementById('menu-detail-body').innerHTML =
     '<div class="recipe-list-state">Loading\u2026</div>';
   document.getElementById('menu-list-view').classList.add('hidden');
   document.getElementById('menu-detail-view').classList.remove('hidden');
 
-  apiGet('/menu/'+encodeURIComponent(code)).then(full => {
-    menuDetailRecipe = full;
+  // If items already loaded (parallel fetch done), render immediately
+  if (recipe.items) {
     renderMenuDetail();
-  }).catch(e => {
-    document.getElementById('menu-detail-body').innerHTML =
-      '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
-  });
+  } else {
+    apiGet('/menu/' + encodeURIComponent(code)).then(full => {
+      menuDetailRecipe = full;
+      renderMenuDetail();
+    }).catch(e => {
+      document.getElementById('menu-detail-body').innerHTML =
+        '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
+    });
+  }
 }
 
 function closeMenuDetail() {
@@ -1215,11 +1320,18 @@ function closeMenuDetail() {
 
 function renderMenuDetail() {
   if (!menuDetailRecipe) return;
-  const r    = menuDetailRecipe;
-  const isPrep = r.is_prep;
-  const cost   = parseFloat(r.total_cost) || 0;
-  const sell   = parseFloat(r.selling_price_inc_vat) || 0;
-  const vat    = parseFloat(appSettings.vat_rate) || 20;
+  const r       = menuDetailRecipe;
+  const isPrep  = r.is_prep;
+  const group   = (r.plu_group||'').toLowerCase();
+  const rawCost = parseFloat(r.total_cost) || 0;
+  const sell    = parseFloat(r.selling_price_inc_vat) || 0;
+  const vat     = parseFloat(appSettings.vat_rate) || 20;
+
+  // Misc applies to dry and prep
+  const applyMisc = menuMiscEnabled && (isPrep || group === 'dry');
+  const miscPct   = parseFloat(appSettings.misc_charge_pct) || 2;
+  const miscAmt   = applyMisc ? rawCost * miscPct / 100 : 0;
+  const cost      = rawCost + miscAmt;
 
   document.getElementById('menu-detail-title').textContent = r.plu_name || '';
 
@@ -1227,21 +1339,26 @@ function renderMenuDetail() {
 
   // ── Details section ──────────────────────────────────────
   html += '<div class="editor-section editor-section-details">';
-  if (r.sku)   html += menuDetailRow('SKU',      r.sku,        true);
-  html +=               menuDetailRow('PLU code', r.recipe_code, true);
-  html +=               menuDetailRow('Type',     isPrep ? 'Prep item' : 'Dish', false);
+  if (r.sku) html += menuDetailRow('SKU', r.sku, true);
+  html += menuDetailRow('Receipe Code', r.recipe_code, true);
+  html += menuDetailRow('Type', isPrep ? 'Prep item' : (group === 'wet' ? 'Wet' : group === 'dry' ? 'Dry' : 'Dish'), false);
   if (!r.costing_complete) {
-    html += '<div class="menu-detail-warn">\u26a0\ufe0f One or more ingredient costs were missing from '+
-            'the order guide when last synced. The total shown is incomplete.</div>';
+    html += '<div class="menu-detail-warn">\u26a0\ufe0f One or more ingredient costs were missing '+
+            'from the order guide when last synced. The total shown is incomplete.</div>';
   }
   html += '</div>';
 
   // ── Costs / GP section ───────────────────────────────────
   html += '<div class="editor-section" style="border-left-color:var(--green)">';
-  html += '<div class="section-title">Costs'+(isPrep ? '' : ' &amp; GP')+'</div>';
+  html += '<div class="section-title">Costs'+(isPrep?'':' &amp; GP')+'</div>';
 
-  if (cost > 0) {
+  if (rawCost > 0) {
     html += '<div class="totals-sub-label">Ingredient cost</div>';
+    if (applyMisc && miscAmt > 0) {
+      html += tRow('Ingredients',        '\u00a3'+rawCost.toFixed(2));
+      html += tRow('Misc ('+miscPct+'%)', '+\u00a0\u00a3'+miscAmt.toFixed(2), 'sub');
+      html += '<hr class="totals-divider">';
+    }
     html += tRow('Total cost', '\u00a3'+cost.toFixed(2));
   }
 
@@ -1297,25 +1414,37 @@ function renderMenuDetail() {
 
   const body = document.getElementById('menu-detail-body');
   body.innerHTML = html;
-  body.dataset.cost = cost;
-  body.dataset.vat  = vat;
+  // Store raw cost and meta for GP model recalc
+  body.dataset.rawcost = rawCost;
+  body.dataset.vat     = vat;
+  body.dataset.isprep  = isPrep;
+  body.dataset.group   = group;
 }
 
 function menuDetailRow(label, value, mono) {
-  return '<div class="menu-detail-row">'+
-    '<span class="menu-detail-label">'+esc(label)+'</span>'+
-    '<span class="menu-detail-value'+(mono?' mono':'')+'">'+esc(String(value||''))+'</span>'+
+  return '<div class="menu-detail-row">' +
+    '<span class="menu-detail-label">'+esc(label)+'</span>' +
+    '<span class="menu-detail-value'+(mono?' mono':'')+'">'+esc(String(value||''))+'</span>' +
   '</div>';
 }
 
 function onMenuSellInput(val) {
-  const sell  = parseFloat(val) || 0;
-  const body  = document.getElementById('menu-detail-body');
-  const cost  = parseFloat(body ? body.dataset.cost : 0) || 0;
-  const vat   = parseFloat(body ? body.dataset.vat  : 20) || 20;
-  const resEl = document.getElementById('menu-model-result');
+  const sell    = parseFloat(val) || 0;
+  const body    = document.getElementById('menu-detail-body');
+  const rawCost = parseFloat(body ? body.dataset.rawcost : 0) || 0;
+  const vat     = parseFloat(body ? body.dataset.vat  : 20) || 20;
+  const isPrep  = body ? body.dataset.isprep === 'true' : false;
+  const group   = body ? body.dataset.group  : '';
+  const resEl   = document.getElementById('menu-model-result');
   if (!resEl) return;
-  if (sell <= 0 || cost <= 0) { resEl.innerHTML = ''; return; }
+  if (sell <= 0 || rawCost <= 0) { resEl.innerHTML = ''; return; }
+
+  // Apply misc to cost for GP model (same logic as cards)
+  const applyMisc = menuMiscEnabled && (isPrep || group === 'dry');
+  const miscPct   = parseFloat(appSettings.misc_charge_pct) || 2;
+  const miscAmt   = applyMisc ? rawCost * miscPct / 100 : 0;
+  const cost      = rawCost + miscAmt;
+
   const sellEx = sell / (1 + vat / 100);
   const gp     = ((sellEx - cost) / sellEx) * 100;
   const gpCls  = gp >= 69.5 ? 'ok' : gp >= 65 ? 'warn' : 'bad';
