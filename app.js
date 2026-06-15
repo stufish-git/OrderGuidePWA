@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.28';
+const VERSION = 'v4.29';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -51,6 +51,9 @@ let menuIngredients  = [];
 let menuMiscEnabled  = true;
 let menuDetailRecipe = null;
 
+// ── Price Alert State ─────────────────────────────────────
+let priceAlerts = [];
+
 // ── Settings State ────────────────────────────────────────
 let settingsUnlocked = false;
 let pinEntry         = '';
@@ -65,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStickyOffset();
   loadData();
   loadSettings();
+  loadPriceAlerts();
   renderPinDots();
 
   document.addEventListener('click', e => {
@@ -78,8 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('resize', updateStickyOffset);
 document.addEventListener('click', e => { if (!e.target.closest('.filter-wrap')) closeAll(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { loadData(); refreshMenuData(); } });
-window.addEventListener('focus', () => { loadData(); refreshMenuData(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { loadData(); refreshMenuData(); loadPriceAlerts(); } });
+window.addEventListener('focus', () => { loadData(); refreshMenuData(); loadPriceAlerts(); });
 
 // ── Settings load (non-blocking) ──────────────────────────
 async function loadSettings() {
@@ -1524,4 +1528,81 @@ function onMenuSellInput(val) {
   html += tRow('Gross profit',    gp.toFixed(1)+'%', gpCls);
   html += tRow('GP cash',         '\u00a3'+(sellEx-cost).toFixed(2));
   resEl.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════
+// PRICE ALERTS
+// ══════════════════════════════════════════════════════════
+
+async function loadPriceAlerts() {
+  try {
+    priceAlerts = await apiGet('/price-history/alerts');
+    renderPriceAlertBanner();
+  } catch(e) { /* silent — non-critical */ }
+}
+
+function renderPriceAlertBanner() {
+  const banner = document.getElementById('price-alert-banner');
+  const badge  = document.getElementById('og-alert-badge');
+  const count  = priceAlerts.length;
+
+  if (banner) {
+    banner.classList.toggle('hidden', count === 0);
+    const txt = document.getElementById('price-alert-text');
+    if (txt) txt.textContent = count + ' price change' + (count !== 1 ? 's' : '') + ' since last check';
+  }
+  // Nav badge — visible from any tab
+  if (badge) badge.classList.toggle('hidden', count === 0);
+}
+
+function showPriceAlertSheet() {
+  if (!priceAlerts.length) return;
+
+  const body = document.getElementById('price-alert-sheet-body');
+  if (!body) return;
+
+  let html = '';
+  priceAlerts.forEach(a => {
+    const isInc   = (a.price_change || 0) > 0;
+    const isDec   = (a.price_change || 0) < 0;
+    const rowCls  = isInc ? 'price-up' : isDec ? 'price-down' : '';
+    const arrow   = isInc ? '\u2191' : isDec ? '\u2193' : '\u2192';
+    const pctVal  = a.diff_pct !== null ? parseFloat(a.diff_pct) : null;
+    const pctStr  = pctVal !== null ? (pctVal > 0 ? '+' : '') + pctVal.toFixed(2) + '%' : '';
+    const dateStr = a.effective_date
+      ? new Date(a.effective_date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'})
+      : '';
+
+    html += '<div class="price-alert-row ' + rowCls + '">' +
+      '<div class="price-alert-main">' +
+        '<div class="price-alert-name">' + esc(a.product_name || a.product_code || '') + '</div>' +
+        '<div class="price-alert-meta">' + esc(a.supplier || '') + (dateStr ? ' \u00b7 ' + dateStr : '') + '</div>' +
+      '</div>' +
+      '<div class="price-alert-prices">' +
+        '<div class="price-alert-old">' + (a.prev_price ? '\u00a3' + parseFloat(a.prev_price).toFixed(2) : '\u2014') + '</div>' +
+        '<div class="price-alert-new">' + arrow + ' \u00a3' + parseFloat(a.price).toFixed(2) + '</div>' +
+        (pctStr ? '<div class="price-alert-pct">' + pctStr + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  });
+
+  body.innerHTML = html;
+  document.getElementById('price-alert-sheet').classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+
+function closePriceAlertSheet() {
+  document.getElementById('price-alert-sheet').classList.add('hidden');
+  document.getElementById('modal-backdrop').classList.add('hidden');
+}
+
+async function acknowledgePriceAlerts() {
+  try {
+    await apiPut('/price-history/acknowledge', {});
+    priceAlerts = [];
+    renderPriceAlertBanner();
+    closePriceAlertSheet();
+  } catch(e) {
+    showToast('Could not acknowledge: ' + e.message);
+  }
 }
