@@ -41,8 +41,6 @@ function recipeKind(r){
 }
 
 // ── Menu State ────────────────────────────────────────────
-// NOTE: Food/Drink filter split requires a Category column in TblReceipeMaster.
-// Currently filtering by All / Dishes / Prep only.
 let allMenuRecipes   = [];
 let menuLoaded       = false;
 let menuTypeFilter   = 'all';
@@ -1130,7 +1128,8 @@ function renderMenuList() {
   const cardsEl = document.getElementById('menu-cards');
   if (!cardsEl) return;
   let list = allMenuRecipes;
-  if      (menuTypeFilter === 'dish') list = list.filter(r => !r.is_prep);
+  if      (menuTypeFilter === 'wet')  list = list.filter(r => !r.is_prep && (r.plu_group||'').toLowerCase() === 'wet');
+  else if (menuTypeFilter === 'dry')  list = list.filter(r => !r.is_prep && (r.plu_group||'').toLowerCase() === 'dry');
   else if (menuTypeFilter === 'prep') list = list.filter(r =>  r.is_prep);
   if (!list.length) {
     const msg = allMenuRecipes.length === 0
@@ -1144,9 +1143,12 @@ function renderMenuList() {
 
 function menuCardHTML(r) {
   const isPrep      = r.is_prep;
-  const borderColor = isPrep ? KIND_COLORS.prep : 'var(--accent)';
-  const kindLabel   = isPrep ? 'PREP' : 'DISH';
-  const kindClass   = isPrep ? 'prep' : 'drink';
+  const group       = (r.plu_group || '').toLowerCase();
+  const borderColor = isPrep ? KIND_COLORS.prep
+                    : group === 'dry' ? KIND_COLORS.food
+                    : 'var(--accent)';                          // wet or unknown → blue
+  const kindLabel   = isPrep ? 'PREP' : group === 'wet' ? 'WET' : group === 'dry' ? 'DRY' : 'DISH';
+  const kindClass   = isPrep ? 'prep' : group === 'dry' ? 'dry' : 'wet';
   const cost        = parseFloat(r.total_cost) || 0;
   const sell        = parseFloat(r.selling_price_inc_vat) || 0;
   const vat         = parseFloat(appSettings.vat_rate) || 20;

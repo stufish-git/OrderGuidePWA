@@ -252,6 +252,8 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
 .type-badge.drink { background: var(--accent-bg); color: var(--accent); }
 .type-badge.prep  { background: var(--green-bg); color: var(--green); }
 .type-badge.dish  { background: var(--accent-bg); color: var(--accent); } /* fallback */
+.type-badge.wet   { background: var(--accent-bg); color: var(--accent); } /* drinks — blue */
+.type-badge.dry   { background: #fef3c7; color: #92400e; }               /* food — amber */
 
 .card-stats-section {
   background: var(--bg);
