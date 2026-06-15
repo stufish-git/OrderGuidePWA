@@ -293,10 +293,31 @@
           <input type="text" id="menu-search-input" class="menu-search-input"
             placeholder="Search recipes or SKU&hellip;" oninput="onMenuSearch(this.value)">
         </div>
-        <!-- Row 3: ingredient filter -->
-        <select id="menu-ing-select" class="menu-ing-select" onchange="onMenuIngFilter(this.value)" disabled>
-          <option value="">All ingredients &mdash; loading&hellip;</option>
-        </select>
+        <!-- Row 3: ingredient filter (searchable dropdown) -->
+        <div class="filter-wrap menu-ing-wrap" id="menu-ing-wrap">
+          <button class="filter-pill menu-ing-pill" id="menu-ing-pill" onclick="toggleDD('menu-ing-dd','menu-ing-pill')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            Ingredient
+            <span class="f-badge" id="menu-ing-badge" style="display:none">1</span>
+            <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="dropdown menu-ing-dd" id="menu-ing-dd">
+            <div class="dd-search">
+              <input type="text" id="menu-ing-search" placeholder="Search ingredients&hellip;"
+                oninput="ddSearch('menu-ing-dd',this.value)" autocomplete="off">
+            </div>
+            <div class="dd-actions">
+              <button class="dd-act" onclick="clearMenuIngFilter()">Clear</button>
+            </div>
+            <div class="dd-list" id="menu-ing-list">
+              <div style="padding:10px 14px;font-size:13px;color:var(--text3)">Loading&hellip;</div>
+            </div>
+          </div>
+        </div>
         <!-- Sync label -->
         <div class="menu-sync-row">
           <span id="menu-sync-label" class="menu-sync-label"></span>

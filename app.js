@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.24';
+const VERSION = 'v4.25';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -1154,13 +1154,20 @@ function buildMenuIngredientList() {
     });
   });
   menuIngredients = [...names].sort((a,b) => a.localeCompare(b));
-  const sel = document.getElementById('menu-ing-select');
-  if (!sel) return;
-  const prev = sel.value;
-  sel.innerHTML = '<option value="">All ingredients</option>' +
-    menuIngredients.map(n => '<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
-  sel.disabled = false;
-  if (prev) sel.value = prev; // restore selection if one was pending
+
+  const listEl = document.getElementById('menu-ing-list');
+  if (!listEl) return;
+
+  if (!menuIngredients.length) {
+    listEl.innerHTML = '<div style="padding:10px 14px;font-size:13px;color:var(--text3)">No ingredients found</div>';
+    return;
+  }
+
+  listEl.innerHTML = menuIngredients.map(n =>
+    '<div class="dd-item menu-ing-item'+(menuIngFilter===n?' ing-active':'')+'" onclick="selectMenuIng(\''+esc(n)+'\')">'+
+    '<span>'+esc(n)+'</span>'+
+    '</div>'
+  ).join('');
 }
 
 // ── Filters & search ─────────────────────────────────────
@@ -1177,8 +1184,28 @@ function onMenuSearch(val) {
   renderMenuList();
 }
 
-function onMenuIngFilter(val) {
-  menuIngFilter = val;
+function selectMenuIng(name) {
+  menuIngFilter = name;
+  const badge = document.getElementById('menu-ing-badge');
+  const pill  = document.getElementById('menu-ing-pill');
+  if (badge) badge.style.display = name ? 'inline' : 'none';
+  if (pill)  pill.classList.toggle('active', !!name);
+  // Highlight selected row
+  document.querySelectorAll('.menu-ing-item').forEach(el =>
+    el.classList.toggle('ing-active', el.querySelector('span')?.textContent === name));
+  closeAll();
+  renderMenuList();
+}
+
+function clearMenuIngFilter() {
+  menuIngFilter = '';
+  const badge     = document.getElementById('menu-ing-badge');
+  const pill      = document.getElementById('menu-ing-pill');
+  const searchInp = document.getElementById('menu-ing-search');
+  if (badge)     badge.style.display = 'none';
+  if (pill)      pill.classList.remove('active');
+  if (searchInp) { searchInp.value = ''; ddSearch('menu-ing-dd', ''); }
+  document.querySelectorAll('.menu-ing-item').forEach(el => el.classList.remove('ing-active'));
   renderMenuList();
 }
 

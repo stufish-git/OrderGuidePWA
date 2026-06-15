@@ -627,19 +627,12 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
 .menu-search-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(26,115,232,0.12); }
 .menu-search-input::placeholder { color: var(--text3); }
 
-/* Ingredient select */
-.menu-ing-select {
-  width: 100%; height: var(--pill-h); padding: 0 16px;
-  border: 1.5px solid var(--border); border-radius: var(--radius-pill);
-  font-family: var(--font); font-size: 13.5px; color: var(--text);
-  background: var(--bg); outline: none; cursor: pointer;
-  -webkit-appearance: none; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa0a6' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 14px center;
-  padding-right: 36px;
-}
-.menu-ing-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.12); }
-.menu-ing-select:disabled { color: var(--text3); cursor: default; }
+/* Ingredient filter dropdown */
+.menu-ing-wrap { width: 100%; }
+.menu-ing-pill  { width: 100%; justify-content: space-between; }
+#menu-ing-dd    { width: 100%; box-sizing: border-box; }
+.menu-ing-item.ing-active { background: var(--accent-bg); }
+.menu-ing-item.ing-active span { color: var(--accent); font-weight: 500; }
 .menu-sync-row { display: flex; justify-content: flex-end; }
 .menu-sync-label { font-family: var(--mono); font-size: 10.5px; color: var(--text3); }
 
