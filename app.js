@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.30';
+const VERSION = 'v4.31';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -1559,7 +1559,6 @@ function showPriceAlertSheet() {
   if (!priceAlerts.length) return;
 
   const body = document.getElementById('price-alert-sheet-body');
-  if (!body) return;
 
   let html = '';
   priceAlerts.forEach(a => {
@@ -1588,12 +1587,10 @@ function showPriceAlertSheet() {
 
   body.innerHTML = html;
   document.getElementById('price-alert-sheet').classList.remove('hidden');
-  document.getElementById('modal-backdrop').classList.remove('hidden');
 }
 
 function closePriceAlertSheet() {
   document.getElementById('price-alert-sheet').classList.add('hidden');
-  document.getElementById('modal-backdrop').classList.add('hidden');
 }
 
 async function acknowledgePriceAlerts() {
