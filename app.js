@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.31';
+const VERSION = 'v4.32';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -16,7 +16,7 @@ const SORT_FIELDS = [
 ];
 
 // ── App Settings ──────────────────────────────────────────
-let appSettings = { vat_rate:20, misc_charge_pct:2, misc_on_default:true };
+let appSettings = { vat_rate:20, misc_charge_pct:2, misc_on_default:true, gp_target_wet:75, gp_target_dry:70, gp_alerts_pending:'0' };
 
 // ── Recipe State ──────────────────────────────────────────
 let currentTab        = 'og';
@@ -96,7 +96,11 @@ async function loadSettings() {
     appSettings.vat_rate        = parseFloat(data.vat_rate)        || 20;
     appSettings.misc_charge_pct = parseFloat(data.misc_charge_pct) || 2;
     appSettings.misc_on_default = data.misc_on_default === '1' || data.misc_on_default === true;
+    appSettings.gp_target_wet   = parseFloat(data.gp_target_wet)   || 75;
+    appSettings.gp_target_dry   = parseFloat(data.gp_target_dry)   || 70;
+    appSettings.gp_alerts_pending = data.gp_alerts_pending || '0';
     localStorage.setItem('og_settings', JSON.stringify(appSettings));
+    renderGPAlertBanner();
     // Show last VBA push time in sync label — more meaningful to staff than page-load time
     if (data.products_last_sync) {
       const d = new Date(data.products_last_sync.replace(' ', 'T'));
@@ -491,6 +495,8 @@ function unlockSettings(){
   document.getElementById('s-vat').value       = appSettings.vat_rate;
   document.getElementById('s-misc-pct').value  = appSettings.misc_charge_pct;
   document.getElementById('s-misc-default').checked = appSettings.misc_on_default;
+  document.getElementById('s-gp-wet').value    = appSettings.gp_target_wet;
+  document.getElementById('s-gp-dry').value    = appSettings.gp_target_dry;
   document.getElementById('s-current-pin').value='';
   document.getElementById('s-new-pin').value='';
 }
@@ -505,11 +511,14 @@ async function saveSettings(){
   const vatRate  = parseFloat(document.getElementById('s-vat').value) || 20;
   const miscPct  = parseFloat(document.getElementById('s-misc-pct').value) || 2;
   const miscOn   = document.getElementById('s-misc-default').checked;
+  const gpWet    = parseFloat(document.getElementById('s-gp-wet').value) || 75;
+  const gpDry    = parseFloat(document.getElementById('s-gp-dry').value) || 70;
   const btn      = document.getElementById('save-settings-btn');
   btn.disabled=true; btn.textContent='Saving\u2026';
   try {
-    await apiPut('/settings',{vat_rate:String(vatRate),misc_charge_pct:String(miscPct),misc_on_default:miscOn?'1':'0'});
+    await apiPut('/settings',{vat_rate:String(vatRate),misc_charge_pct:String(miscPct),misc_on_default:miscOn?'1':'0',gp_target_wet:String(gpWet),gp_target_dry:String(gpDry)});
     appSettings.vat_rate=vatRate; appSettings.misc_charge_pct=miscPct; appSettings.misc_on_default=miscOn;
+    appSettings.gp_target_wet=gpWet; appSettings.gp_target_dry=gpDry;
     localStorage.setItem('og_settings',JSON.stringify(appSettings));
     showToast('Settings saved');
   } catch(e){
@@ -1130,6 +1139,7 @@ async function loadMenuRecipes() {
     allMenuRecipes = await apiGet('/menu');
     menuLoaded = true;
     renderMenuList();
+    renderGPAlertBanner();
     updateMenuSyncLabel();
 
     // Step 2 — parallel fetch all items for ingredient filter
@@ -1601,5 +1611,79 @@ async function acknowledgePriceAlerts() {
     closePriceAlertSheet();
   } catch(e) {
     showToast('Could not acknowledge: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// GP ALERTS
+// ══════════════════════════════════════════════════════════
+
+function renderGPAlertBanner() {
+  const banner = document.getElementById('gp-alert-banner');
+  if (!banner) return;
+
+  const pending = appSettings.gp_alerts_pending === '1';
+  const count   = allMenuRecipes.filter(r => r.below_target).length;
+
+  banner.classList.toggle('hidden', !pending || count === 0);
+  if (pending && count > 0) {
+    const txt = document.getElementById('gp-alert-text');
+    if (txt) txt.textContent = count + ' recipe' + (count !== 1 ? 's' : '') + ' below GP target';
+  }
+}
+
+function showGPAlertSheet() {
+  const body = document.getElementById('gp-alert-sheet-body');
+  if (!body) return;
+
+  const vat     = parseFloat(appSettings.vat_rate)        || 20;
+  const miscPct = parseFloat(appSettings.misc_charge_pct)  || 2;
+  const below   = allMenuRecipes.filter(r => r.below_target);
+
+  let html = '';
+  below.forEach(r => {
+    const group   = (r.plu_group || '').toLowerCase();
+    const target  = group === 'wet'
+      ? (parseFloat(appSettings.gp_target_wet) || 75)
+      : (parseFloat(appSettings.gp_target_dry) || 70);
+    const rawCost  = parseFloat(r.total_cost) || 0;
+    const applyMisc = menuMiscEnabled && group === 'dry';
+    const cost     = rawCost + (applyMisc ? rawCost * miscPct / 100 : 0);
+    const sell     = parseFloat(r.selling_price_inc_vat) || 0;
+    const sellEx   = sell > 0 ? sell / (1 + vat / 100) : 0;
+    const gp       = sellEx > 0 ? ((sellEx - cost) / sellEx * 100) : 0;
+    const badge    = group === 'wet' ? 'WET' : 'DRY';
+    const badgeCls = group === 'wet' ? 'wet' : 'dry';
+    const gap      = gp - target;
+
+    html += '<div class="gp-alert-row">' +
+      '<div class="gp-alert-main">' +
+        '<div class="gp-alert-name">' + esc(r.plu_name) + '</div>' +
+        '<div class="gp-alert-meta"><span class="type-badge ' + badgeCls + '">' + badge + '</span>' +
+          ' target ' + target + '%</div>' +
+      '</div>' +
+      '<div class="gp-alert-right">' +
+        '<div class="gp-alert-gp bad">' + gp.toFixed(1) + '%</div>' +
+        '<div class="gp-alert-gap">' + gap.toFixed(1) + '%</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  body.innerHTML = html || '<div class="recipe-list-state">No below-target recipes.</div>';
+  document.getElementById('gp-alert-sheet').classList.remove('hidden');
+}
+
+function closeGPAlertSheet() {
+  document.getElementById('gp-alert-sheet').classList.add('hidden');
+}
+
+async function acknowledgeGPAlerts() {
+  try {
+    await apiPut('/settings', {gp_alerts_pending: '0'});
+    appSettings.gp_alerts_pending = '0';
+    renderGPAlertBanner();
+    closeGPAlertSheet();
+  } catch(e) {
+    showToast('Could not dismiss: ' + e.message);
   }
 }

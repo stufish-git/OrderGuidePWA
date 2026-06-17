@@ -331,6 +331,13 @@
         </div>
       </div>
       <div id="menu-cards" class="recipe-cards-list"></div>
+      <!-- GP alert banner -->
+      <div id="gp-alert-banner" class="price-alert-banner hidden" style="border-bottom-color:var(--red);background:#fff5f5">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;color:#dc2626"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="gp-alert-text" class="price-alert-text" style="color:#991b1b"></span>
+        <button class="price-alert-btn" style="border-color:var(--red);color:#991b1b" onclick="showGPAlertSheet()">View</button>
+        <button class="price-alert-close" style="color:#991b1b" onclick="acknowledgeGPAlerts()">&times;</button>
+      </div>
     </div>
 
     <!-- Detail view -->
@@ -415,6 +422,24 @@
               <span class="ios-toggle-track"></span>
             </label>
           </div>
+        </div>
+
+        <div class="editor-section" style="border-left-color:var(--green)">
+          <div class="section-title">GP Targets</div>
+          <div class="settings-field-row">
+            <label>Wet recipes target</label>
+            <div class="settings-num-wrap">
+              <input type="number" id="s-gp-wet" min="0" max="100" step="1">
+              <span>%</span>
+            </div>
+          </div>
+          <div class="settings-field-row" style="border-bottom:none">
+            <label>Dry recipes target</label>
+            <div class="settings-num-wrap">
+              <input type="number" id="s-gp-dry" min="0" max="100" step="1">
+              <span>%</span>
+            </div>
+          </div>
           <button class="save-btn" id="save-settings-btn" onclick="saveSettings()">Save</button>
         </div>
 
@@ -438,6 +463,22 @@
           <div id="diag-output" style="margin-top:10px;font-size:12px;font-family:var(--mono);line-height:1.7"></div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- GP alert sheet -->
+  <div id="gp-alert-sheet" class="hidden">
+    <div class="del-backdrop" onclick="closeGPAlertSheet()"></div>
+    <div class="price-alert-sheet-panel">
+      <div class="price-alert-sheet-hdr">
+        <span class="price-alert-sheet-title">Recipes Below GP Target</span>
+        <button class="price-alert-close" onclick="closeGPAlertSheet()">&times;</button>
+      </div>
+      <div id="gp-alert-sheet-body" class="price-alert-sheet-body"></div>
+      <div class="price-alert-sheet-ftr">
+        <button class="del-cancel" onclick="closeGPAlertSheet()">Close</button>
+        <button class="del-confirm" style="background:var(--accent);border-color:var(--accent)" onclick="acknowledgeGPAlerts()">Dismiss</button>
       </div>
     </div>
   </div>
