@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.32';
+const VERSION = 'v4.33';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -406,7 +406,7 @@ function switchTab(tab) {
     loadRecipes();
   } else if(tab==='menu'){
     if(!menuLoaded) loadMenuRecipes();
-    else updateMenuMiscBtn();
+    else { updateMenuMiscBtn(); refreshMenuData(); }
   }
 }
 
