@@ -1,4 +1,4 @@
-const CACHE_NAME = 'order-guide-v4.35';
+const CACHE_NAME = 'order-guide-v4.36';
 const SHELL = ['./', './index.html', './style.css', './app.js', './manifest.json', './favicon.ico', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

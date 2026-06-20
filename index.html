@@ -58,10 +58,24 @@
       <button class="price-alert-close" onclick="acknowledgePriceAlerts()" title="Mark as seen">&times;</button>
     </div>
     <div class="toolbar">
-      <div class="search-wrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="search-input" placeholder="Search products, codes, suppliers..." oninput="onSearch(this.value)">
-        <button class="search-info-btn" onclick="openSearchInfo()" title="Search help">i</button>
+      <div class="toolbar-search-row">
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="Search products, codes, suppliers..." oninput="onSearch(this.value)">
+          <button class="search-info-btn" onclick="openSearchInfo()" title="Search help">i</button>
+        </div>
+        <div class="filter-wrap" id="fw-sort">
+          <button class="filter-pill" id="fp-sort" onclick="toggleDD('sort-panel','fp-sort')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+            <span class="sort-label">Sort</span>
+            <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="sort-panel" id="sort-panel">
+            <div class="sort-panel-title">Sort order</div>
+            <div id="sort-rows"></div>
+            <button class="add-sort" id="add-sort" onclick="addSort()">+ Add level</button>
+          </div>
+        </div>
       </div>
       <div class="filter-wrap" id="fw-supplier">
         <button class="filter-pill" id="fp-supplier" onclick="toggleDD('dd-supplier','fp-supplier')">
@@ -94,18 +108,6 @@
           <div class="dd-search"><input type="text" placeholder="Search..." oninput="ddSearch('dd-subcategory',this.value)"></div>
           <div class="dd-actions"><button class="dd-act" onclick="selAll('subcategory')">Clear</button></div>
           <div class="dd-list" id="dl-subcategory"></div>
-        </div>
-      </div>
-      <div class="filter-wrap" style="margin-left:auto">
-        <button class="filter-pill" id="fp-sort" onclick="toggleDD('sort-panel','fp-sort')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
-          <span class="sort-label">Sort</span>
-          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="sort-panel" id="sort-panel">
-          <div class="sort-panel-title">Sort order</div>
-          <div id="sort-rows"></div>
-          <button class="add-sort" id="add-sort" onclick="addSort()">+ Add level</button>
         </div>
       </div>
     </div>
@@ -288,6 +290,9 @@
             <button class="seg-btn"        data-mtype="prep" onclick="setMenuTypeFilter('prep')">Prep</button>
           </div>
           <button class="filter-pill" id="menu-misc-btn" onclick="toggleMenuMisc()">Misc 2%</button>
+        </div>
+        <!-- Row 2: GP filter pill -->
+        <div class="menu-gp-row">
           <button class="filter-pill menu-gp-pill" id="menu-gp-btn" onclick="toggleGPPanel()">
             <span id="menu-gp-label">GP</span>
             <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
