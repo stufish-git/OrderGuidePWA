@@ -291,18 +291,17 @@
           </div>
           <button class="filter-pill" id="menu-misc-btn" onclick="toggleMenuMisc()">Misc 2%</button>
         </div>
-        <!-- Row 2: GP filter pill -->
-        <div class="menu-gp-row">
+        <!-- Row 2: recipe search + GP filter inline -->
+        <div class="menu-search-sort-row">
+          <div class="menu-search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="menu-search-input" class="menu-search-input"
+              placeholder="Search recipes or SKU&hellip;" oninput="onMenuSearch(this.value)">
+          </div>
           <button class="filter-pill menu-gp-pill" id="menu-gp-btn" onclick="toggleGPPanel()">
             <span id="menu-gp-label">GP</span>
             <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-        </div>
-        <!-- Row 2: recipe text search -->
-        <div class="menu-search-wrap">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="menu-search-input" class="menu-search-input"
-            placeholder="Search recipes or SKU&hellip;" oninput="onMenuSearch(this.value)">
         </div>
         <!-- Row 3: ingredient filter (searchable dropdown) -->
         <div class="filter-wrap menu-ing-wrap" id="menu-ing-wrap">

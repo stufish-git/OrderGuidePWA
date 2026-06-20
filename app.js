@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.36';
+const VERSION = 'v4.37';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -1663,20 +1663,26 @@ function toggleGPPanel() {
   const panel = document.getElementById('menu-gp-panel');
   if (!panel) return;
   const opening = panel.classList.contains('hidden');
-  panel.classList.toggle('hidden', !opening);
-  if (opening) {
-    // Reset slider to 70% default on every open
-    const slider = document.getElementById('menu-gp-slider');
-    if (slider) slider.value = 70;
-    document.getElementById('menu-gp-value').textContent = '70%';
-    // Reset mode to Below
-    document.getElementById('gp-mode-below').classList.add('active');
-    document.getElementById('gp-mode-above').classList.remove('active');
-    // Apply immediately so list updates as soon as panel opens
-    menuGPFilter = {mode: 'below', pct: 70};
+
+  if (!opening) {
+    // Closing — hide panel and clear filter
+    panel.classList.add('hidden');
+    menuGPFilter = null;
     updateGPPill();
     renderMenuList();
+    return;
   }
+
+  // Opening — reset to defaults then apply immediately
+  panel.classList.remove('hidden');
+  const slider = document.getElementById('menu-gp-slider');
+  if (slider) slider.value = 70;
+  document.getElementById('menu-gp-value').textContent = '70%';
+  document.getElementById('gp-mode-below').classList.add('active');
+  document.getElementById('gp-mode-above').classList.remove('active');
+  menuGPFilter = {mode: 'below', pct: 70};
+  updateGPPill();
+  renderMenuList();
 }
 
 function setGPMode(mode) {
