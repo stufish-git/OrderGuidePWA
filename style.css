@@ -785,9 +785,9 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
 }
 
 /* ── OG toolbar: search + sort inline ─────────────────── */
-.toolbar-search-row { display: flex; align-items: center; gap: 8px; }
+.toolbar-search-row { display: flex; align-items: center; width: 100%; }
 .toolbar-search-row .search-wrap { flex: 1; min-width: 0; }
-#fw-sort { flex-shrink: 0; }
+#fw-sort { flex-shrink: 0; margin-left: 8px; }
 
 /* ── Menu search + GP inline row ──────────────────────── */
 .menu-search-sort-row { display: flex; align-items: center; gap: 8px; }
