@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.33';
+const VERSION = 'v4.35';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -7,7 +7,7 @@ const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
 // ── OG State ──────────────────────────────────────────────
 let products = [];
 let opts     = { supplier:[], category:[], subcategory:[] };
-let filters  = { area:'all', search:'', supplier:new Set(), category:new Set(), subcategory:new Set() };
+let filters  = { search:'', supplier:new Set(), category:new Set(), subcategory:new Set() };
 let sorts    = [{ field:'supplier', dir:'asc' }];
 const SORT_FIELDS = [
   {v:'supplier',l:'Supplier'},{v:'product',l:'Product Name'},{v:'code',l:'Product Code'},
@@ -50,6 +50,7 @@ let menuIngFilters   = new Set(); // composite keys "name|||supplier" — OR log
 let menuIngredients  = [];
 let menuMiscEnabled  = true;
 let menuDetailRecipe = null;
+let menuGPFilter     = null; // null = off | {mode:'below'|'above', pct:number}
 
 // ── Price Alert State ─────────────────────────────────────
 let priceAlerts = [];
@@ -155,7 +156,6 @@ async function loadData() {
 // ── Filter options ────────────────────────────────────────
 function productsUpTo(level) {
   let list = products;
-  if (filters.area !== 'all') list = list.filter(p=>(p.area||'').toLowerCase()===filters.area);
   if (level==='supplier') return list;
   if (filters.supplier.size>0) list = list.filter(p=>filters.supplier.has(p.supplier));
   if (level==='category') return list;
@@ -188,11 +188,6 @@ function ddSearch(ddId,q) {
 }
 
 // ── Filter interactions ───────────────────────────────────
-function setArea(a) {
-  filters.area=a;
-  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.area===a));
-  clearDownstream('area'); render();
-}
 function onSearch(v) { filters.search=v; render(); }
 function parseSearchTerms(raw) {
   const terms=[]; const re=/"([^"]+)"/g; let m,rem=raw;
@@ -223,9 +218,8 @@ function updatePill(k) {
   else{badge.textContent=n;badge.style.display='inline';pill.classList.add('active');}
 }
 function clearAll() {
-  filters.search=''; filters.area='all';
+  filters.search='';
   document.getElementById('search-input').value='';
-  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.area==='all'));
   ['supplier','category','subcategory'].forEach(k=>{filters[k]=new Set();});
   buildOpts(); render();
 }
@@ -263,7 +257,6 @@ function addSort() { if(sorts.length<3){sorts.push({field:'product',dir:'asc'});
 // ── Core render ───────────────────────────────────────────
 function render() {
   let list=products;
-  if(filters.area!=='all') list=list.filter(p=>(p.area||'').toLowerCase()===filters.area);
   ['supplier','category','subcategory'].forEach(k=>{ if(filters[k].size>0) list=list.filter(p=>filters[k].has(p[k])); });
   const terms=filters.search.trim()?parseSearchTerms(filters.search.trim()):[];
   if(terms.length) list=list.filter(p=>matchesSearch(p,terms));
@@ -279,7 +272,6 @@ function render() {
   renderTable(list,terms); renderTags(); updateStickyOffset();
   document.getElementById('results-bar').innerHTML=`<strong>${list.length.toLocaleString()}</strong> of ${products.length.toLocaleString()} products`;
   const parts=[];
-  if(filters.area!=='all') parts.push('Area: '+filters.area);
   if(filters.search) parts.push('Search: "'+filters.search+'"');
   ['supplier','category','subcategory'].forEach(k=>{ if(filters[k].size>0) parts.push([...filters[k]].join(', ')); });
   const d=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
@@ -299,14 +291,13 @@ function renderTable(list,terms) {
       <td class="col-price copyable" ${cp(fmt(p.price,2))}>${fmt(p.price,2)}</td>
       <td class="col-pack copyable" ${cp(p.pack||'')}>${esc(p.pack||'')}</td>
       <td class="col-measure copyable" ${cp(p.measure||'')}>${esc(p.measure||'')}</td>
-      <td class="col-unitcost copyable" ${cp(fmt(p.unitcost,4))}>${fmt(p.unitcost,4)}</td>
+      <td class="col-unitcost copyable" ${cp(fmt(p.unitcost,2))}>${fmt(p.unitcost,2)}</td>
       <td class="col-date copyable" ${cp(p.lastupdate||'')}>${esc(p.lastupdate||'')}</td>
     </tr>`).join('');
 }
 function renderTags() {
   const bar=document.getElementById('tag-bar'),tags=[];
   if(filters.search) tags.push(mkTag(`Search: "${esc(filters.search)}"`,`clearSearch()`));
-  if(filters.area!=='all') tags.push(mkTag('Area: '+filters.area,`setArea('all')`));
   const labels={supplier:'Supplier',category:'Category',subcategory:'Sub Cat'};
   ['supplier','category','subcategory'].forEach(k=>filters[k].forEach(v=>tags.push(mkTag(labels[k]+': '+esc(v),`removeTag('${k}','${esc(v)}')`))));
   if(tags.length){bar.innerHTML=tags.join('')+`<button class="clear-all" onclick="clearAll()">Clear all</button>`;bar.classList.add('show');}
@@ -354,24 +345,6 @@ function updateStickyOffset() {
   });
   const nav=document.getElementById('bottom-nav');
   wrap.style.height=(window.innerHeight-above-(nav?nav.offsetHeight:0))+'px';
-}
-function checkStaleData() {
-  if(!products.length) return;
-  let latest=null;
-  products.forEach(p=>{
-    if(!p.lastupdate) return;
-    const d = new Date(p.lastupdate); // ISO format YYYY-MM-DD from DB
-    if(!isNaN(d)&&(!latest||d>latest)) latest=d;
-  });
-  if(!latest) return;
-  const ageH=(Date.now()-latest.getTime())/(1000*60*60);
-  if(ageH>48){const days=Math.floor(ageH/24);setStaleWarning(`Price data is ${days} day${days>1?'s':''} old.`);}
-  else setStaleWarning(null);
-}
-function setStaleWarning(msg) {
-  const b=document.getElementById('stale-banner');
-  if(msg){b.textContent='\u26a0\ufe0f  '+msg;b.classList.add('show');}else b.classList.remove('show');
-  updateStickyOffset();
 }
 let copyToastTimer=null;
 function copyCell(val){
@@ -519,6 +492,8 @@ async function saveSettings(){
     await apiPut('/settings',{vat_rate:String(vatRate),misc_charge_pct:String(miscPct),misc_on_default:miscOn?'1':'0',gp_target_wet:String(gpWet),gp_target_dry:String(gpDry)});
     appSettings.vat_rate=vatRate; appSettings.misc_charge_pct=miscPct; appSettings.misc_on_default=miscOn;
     appSettings.gp_target_wet=gpWet; appSettings.gp_target_dry=gpDry;
+    localStorage.setItem('og_settings',JSON.stringify(appSettings));
+    if (currentTab === 'menu') { renderMenuList(); renderGPAlertBanner(); updateMenuMiscBtn(); }
     localStorage.setItem('og_settings',JSON.stringify(appSettings));
     showToast('Settings saved');
   } catch(e){
@@ -1111,14 +1086,12 @@ function confirmDeleteRecipe(){
 async function refreshMenuData() {
   if (currentTab !== 'menu' || !menuLoaded) return;
   try {
-    const freshList = await apiGet('/menu');
-    // Merge: update list-level fields, preserve already-loaded items
-    allMenuRecipes = freshList.map(fresh => {
-      const existing = allMenuRecipes.find(r => r.recipe_code === fresh.recipe_code);
-      return existing ? Object.assign({}, fresh, {items: existing.items}) : fresh;
-    });
+    allMenuRecipes  = await apiGet('/menu?with_items=1');
+    menuFullyLoaded = true;
     renderMenuList();
-  } catch(e) { /* silent — don't disrupt UX on background refresh */ }
+    renderGPAlertBanner();
+    buildMenuIngredientList();
+  } catch(e) { /* silent */ }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1130,29 +1103,18 @@ async function loadMenuRecipes() {
   if (!cardsEl) return;
   cardsEl.innerHTML = '<div class="recipe-list-state">Loading\u2026</div>';
 
-  // Preload misc from settings on first load
   menuMiscEnabled = appSettings.misc_on_default !== false;
   updateMenuMiscBtn();
 
   try {
-    // Step 1 — load list, render immediately
-    allMenuRecipes = await apiGet('/menu');
-    menuLoaded = true;
+    // Single call — returns list + all items together
+    allMenuRecipes = await apiGet('/menu?with_items=1');
+    menuLoaded      = true;
+    menuFullyLoaded = true;
     renderMenuList();
     renderGPAlertBanner();
-    updateMenuSyncLabel();
-
-    // Step 2 — parallel fetch all items for ingredient filter
-    const ingSel = document.getElementById('menu-ing-select');
-    const full = await Promise.all(allMenuRecipes.map(r =>
-      apiGet('/menu/' + encodeURIComponent(r.recipe_code))
-        .catch(() => Object.assign({}, r, {items:[]}))
-    ));
-    allMenuRecipes = full;
-    menuFullyLoaded = true;
     buildMenuIngredientList();
-    if (menuIngFilters.size > 0) renderMenuList(); // re-render if ingredient filter was waiting
-
+    updateMenuSyncLabel();
   } catch(e) {
     cardsEl.innerHTML = '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
   }
@@ -1310,6 +1272,23 @@ function renderMenuList() {
     );
   }
 
+  // GP filter — preps hidden while active; dishes matched by calculated GP
+  if (menuGPFilter) {
+    const vat     = parseFloat(appSettings.vat_rate)        || 20;
+    const miscPct = parseFloat(appSettings.misc_charge_pct) || 2;
+    const thresh  = menuGPFilter.pct;
+    list = list.filter(r => {
+      if (r.is_prep) return false;
+      const group   = (r.plu_group||'').toLowerCase();
+      const rawCost = parseFloat(r.total_cost) || 0;
+      const cost    = rawCost * (menuMiscEnabled && group === 'dry' ? (1 + miscPct/100) : 1);
+      const sell    = parseFloat(r.selling_price_inc_vat) || 0;
+      if (sell <= 0 || cost <= 0) return false;
+      const gp = ((sell/(1+vat/100) - cost) / (sell/(1+vat/100))) * 100;
+      return menuGPFilter.mode === 'below' ? gp < thresh : gp > thresh;
+    });
+  }
+
   if (!list.length) {
     const msg = allMenuRecipes.length === 0
       ? 'No menu data. Run the Excel Push to App.'
@@ -1378,23 +1357,11 @@ function openMenuDetail(code) {
   menuDetailRecipe = recipe;
 
   document.getElementById('menu-detail-title').textContent = recipe.plu_name || '';
-  document.getElementById('menu-detail-body').innerHTML =
-    '<div class="recipe-list-state">Loading\u2026</div>';
   document.getElementById('menu-list-view').classList.add('hidden');
   document.getElementById('menu-detail-view').classList.remove('hidden');
 
-  // If items already loaded (parallel fetch done), render immediately
-  if (recipe.items) {
-    renderMenuDetail();
-  } else {
-    apiGet('/menu/' + encodeURIComponent(code)).then(full => {
-      menuDetailRecipe = full;
-      renderMenuDetail();
-    }).catch(e => {
-      document.getElementById('menu-detail-body').innerHTML =
-        '<div class="recipe-list-state error">Could not load: '+esc(e.message)+'</div>';
-    });
-  }
+  // Items pre-loaded via with_items fetch — always render immediately
+  renderMenuDetail();
 }
 
 function closeMenuDetail() {
@@ -1489,7 +1456,7 @@ function renderMenuDetail() {
           '</div>' +
         '</div>' +
         '<div class="menu-ing-costs">' +
-          (uc > 0 ? '<div class="menu-ing-uc">'+esc(item.unit_measure||'')+' @ \u00a3'+uc.toFixed(4)+'</div>' : '') +
+          (uc > 0 ? '<div class="menu-ing-uc">'+esc(item.unit_measure||'')+' @ \u00a3'+uc.toFixed(2)+'</div>' : '') +
           '<div class="menu-ing-lc">'+(lc > 0 ? '\u00a3'+lc.toFixed(2) : '\u2014')+'</div>' +
         '</div>' +
       '</div>';
@@ -1685,5 +1652,74 @@ async function acknowledgeGPAlerts() {
     closeGPAlertSheet();
   } catch(e) {
     showToast('Could not dismiss: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MENU GP FILTER
+// ══════════════════════════════════════════════════════════
+
+function toggleGPPanel() {
+  const panel = document.getElementById('menu-gp-panel');
+  if (!panel) return;
+  const opening = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !opening);
+  if (opening) {
+    // Reset slider to 70% default on every open
+    const slider = document.getElementById('menu-gp-slider');
+    if (slider) slider.value = 70;
+    document.getElementById('menu-gp-value').textContent = '70%';
+    // Reset mode to Below
+    document.getElementById('gp-mode-below').classList.add('active');
+    document.getElementById('gp-mode-above').classList.remove('active');
+    // Apply immediately so list updates as soon as panel opens
+    menuGPFilter = {mode: 'below', pct: 70};
+    updateGPPill();
+    renderMenuList();
+  }
+}
+
+function setGPMode(mode) {
+  document.getElementById('gp-mode-below').classList.toggle('active', mode === 'below');
+  document.getElementById('gp-mode-above').classList.toggle('active', mode === 'above');
+  const pct = parseInt(document.getElementById('menu-gp-slider').value) || 70;
+  menuGPFilter = {mode, pct};
+  updateGPPill();
+  renderMenuList();
+}
+
+function onGPSlider(val) {
+  const pct = parseInt(val);
+  document.getElementById('menu-gp-value').textContent = pct + '%';
+  const mode = document.getElementById('gp-mode-above').classList.contains('active') ? 'above' : 'below';
+  menuGPFilter = {mode, pct};
+  updateGPPill();
+  renderMenuList();
+}
+
+function clearGPFilter() {
+  menuGPFilter = null;
+  const slider = document.getElementById('menu-gp-slider');
+  if (slider) slider.value = 70;
+  const valEl = document.getElementById('menu-gp-value');
+  if (valEl) valEl.textContent = '70%';
+  document.getElementById('gp-mode-below').classList.add('active');
+  document.getElementById('gp-mode-above').classList.remove('active');
+  document.getElementById('menu-gp-panel').classList.add('hidden');
+  updateGPPill();
+  renderMenuList();
+}
+
+function updateGPPill() {
+  const btn = document.getElementById('menu-gp-btn');
+  if (!btn) return;
+  const lbl = document.getElementById('menu-gp-label');
+  if (menuGPFilter) {
+    const sym = menuGPFilter.mode === 'below' ? '<' : '>';
+    if (lbl) lbl.textContent = sym + '\u202f' + menuGPFilter.pct + '%';
+    btn.classList.add('active');
+  } else {
+    if (lbl) lbl.textContent = 'GP';
+    btn.classList.remove('active');
   }
 }

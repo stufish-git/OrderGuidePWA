@@ -58,11 +58,6 @@
       <button class="price-alert-close" onclick="acknowledgePriceAlerts()" title="Mark as seen">&times;</button>
     </div>
     <div class="toolbar">
-      <div class="seg">
-        <button class="seg-btn active" data-area="all"     onclick="setArea('all')">All</button>
-        <button class="seg-btn"        data-area="bar"     onclick="setArea('bar')">Bar</button>
-        <button class="seg-btn"        data-area="kitchen" onclick="setArea('kitchen')">Kitchen</button>
-      </div>
       <div class="search-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="search-input" placeholder="Search products, codes, suppliers..." oninput="onSearch(this.value)">
@@ -293,6 +288,10 @@
             <button class="seg-btn"        data-mtype="prep" onclick="setMenuTypeFilter('prep')">Prep</button>
           </div>
           <button class="filter-pill" id="menu-misc-btn" onclick="toggleMenuMisc()">Misc 2%</button>
+          <button class="filter-pill menu-gp-pill" id="menu-gp-btn" onclick="toggleGPPanel()">
+            <span id="menu-gp-label">GP</span>
+            <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
         </div>
         <!-- Row 2: recipe text search -->
         <div class="menu-search-wrap">
@@ -328,6 +327,19 @@
         <!-- Sync label -->
         <div class="menu-sync-row">
           <span id="menu-sync-label" class="menu-sync-label"></span>
+        </div>
+        <!-- GP slider panel — shown when GP pill is tapped -->
+        <div id="menu-gp-panel" class="menu-gp-panel hidden">
+          <div class="seg menu-gp-seg">
+            <button class="seg-btn active" id="gp-mode-below" onclick="setGPMode('below')">Below</button>
+            <button class="seg-btn"        id="gp-mode-above" onclick="setGPMode('above')">Above</button>
+          </div>
+          <div class="menu-gp-slider-row">
+            <input type="range" id="menu-gp-slider" min="0" max="100" step="1" value="70"
+              oninput="onGPSlider(this.value)">
+            <span id="menu-gp-value">70%</span>
+          </div>
+          <button class="dd-act" onclick="clearGPFilter()">Clear</button>
         </div>
       </div>
       <div id="menu-cards" class="recipe-cards-list"></div>
