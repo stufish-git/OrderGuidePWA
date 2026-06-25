@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.41';
+const VERSION = 'v4.42';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -548,6 +548,14 @@ function cStat(label, val) {
 }
 function cStatRaw(label, html) {
   return '<div class="card-stat"><div class="card-stat-label">'+label+'</div><div class="card-stat-value">'+html+'</div></div>';
+}
+
+// ── Totals row helper (used by menu detail renderer) ──────
+function tRow(label, val, cls) {
+  return '<div class="totals-row'+(cls?' '+cls:'')+'">' +
+    '<span class="totals-label">'+label+'</span>' +
+    '<span class="totals-value">'+val+'</span>' +
+  '</div>';
 }
 
 // ── Menu background refresh (on focus/visibility) ─────────
