@@ -139,142 +139,6 @@
     <footer><span class="version-badge" id="version-badge"></span></footer>
   </div>
 
-  <!-- ── Builder ── -->
-  <div id="screen-builder" class="screen hidden">
-    <div id="recipe-list-view">
-      <div class="recipe-toolbar">
-        <div class="seg" id="recipe-type-seg">
-          <button class="seg-btn active" data-rtype="all"   onclick="setRecipeTypeFilter('all')">All</button>
-          <button class="seg-btn"        data-rtype="food"  onclick="setRecipeTypeFilter('food')">Food</button>
-          <button class="seg-btn"        data-rtype="drink" onclick="setRecipeTypeFilter('drink')">Drink</button>
-          <button class="seg-btn"        data-rtype="prep"  onclick="setRecipeTypeFilter('prep')">Prep</button>
-        </div>
-        <button class="recipe-new-btn" onclick="openNewRecipe()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Recipe
-        </button>
-      </div>
-      <div id="recipe-cards" class="recipe-cards-list"></div>
-    </div>
-
-    <div id="recipe-editor-view" class="hidden">
-      <div class="editor-header" onclick="closeEditor()">
-        <svg class="editor-back-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        <div class="editor-title-block">
-          <span class="editor-breadcrumb">Builder</span>
-          <span class="editor-title" id="editor-title">New Recipe</span>
-        </div>
-        <button class="editor-delete" id="editor-delete-btn"
-          onclick="event.stopPropagation();confirmDeleteRecipe()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-        </button>
-      </div>
-
-      <div class="editor-body" id="editor-body">
-
-        <!-- Details -->
-        <div class="editor-section editor-section-details">
-          <input class="editor-name-input" type="text" id="recipe-name-input"
-            placeholder="Recipe name" oninput="onEditorNameChange()">
-
-          <div class="editor-type-toggle">
-            <button class="type-btn kind-btn active" data-kind="food"  onclick="setRecipeKind('food')">Food</button>
-            <button class="type-btn kind-btn"        data-kind="drink" onclick="setRecipeKind('drink')">Drink</button>
-            <button class="type-btn kind-btn"        data-kind="prep"  onclick="setRecipeKind('prep')">Prep</button>
-          </div>
-
-          <!-- Dish fields -->
-          <div id="dish-fields">
-            <div class="editor-field-row">
-              <label>GP Target</label>
-              <div class="editor-field-input-wrap">
-                <input type="range" id="gp-target-input" class="gp-slider"
-                  min="0" max="100" step="0.5" value="70"
-                  oninput="onGpSliderChange(this.value)">
-                <span class="gp-value-display" id="gp-value-display">70.0%</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Prep fields -->
-          <div id="prep-fields" class="hidden">
-            <div class="editor-field-row">
-              <label>Batch Size</label>
-              <div class="editor-field-input-wrap">
-                <input class="editor-field-input" type="number" id="batch-size-input"
-                  placeholder="e.g. 1" min="0" step="0.001" oninput="recalcTotals()">
-              </div>
-            </div>
-            <div class="editor-field-row">
-              <label>Batch Unit</label>
-              <div class="editor-field-input-wrap">
-                <input class="editor-field-input" type="text" id="batch-unit-input"
-                  placeholder="e.g. litre, kg, portion">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Ingredients -->
-        <div class="editor-section editor-section-ingredients">
-          <div class="section-title">Ingredients</div>
-
-          <!-- Misc charge — section-level setting -->
-          <div class="misc-row">
-            <label class="misc-row-label">
-              <input type="checkbox" id="misc-enabled" onchange="recalcTotals()">
-              <span>Misc ingredients</span>
-            </label>
-            <div class="misc-pct-wrap">
-              <input type="number" id="misc-pct-input" class="misc-pct-input"
-                min="0" max="20" step="0.5" value="2" oninput="recalcTotals()">
-              <span class="misc-pct-unit">%</span>
-            </div>
-          </div>
-
-          <!-- Search pinned at top — refocused after every addition -->
-          <div class="ingredient-search-wrap">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="ingredient-search" class="ingredient-search-input"
-              placeholder="Search products or prep recipes..."
-              oninput="onIngredientSearch(this.value)" autocomplete="off">
-          </div>
-          <div id="ingredient-results" class="ingredient-results hidden"></div>
-
-          <!-- Ingredient list builds downward below search -->
-          <div id="ingredient-list"></div>
-        </div>
-
-        <!-- Totals -->
-        <div class="editor-section hidden" id="recipe-totals-section">
-          <div id="totals-costs"></div>
-          <div id="totals-target"></div>
-          <div id="totals-selling" class="totals-selling-wrap hidden">
-            <div class="selling-label">Your menu price (inc VAT)</div>
-            <div class="selling-input-row">
-              <span class="selling-prefix">&pound;</span>
-              <input type="number" id="selling-price-input" class="selling-price-input"
-                min="0" step="0.01" placeholder="0.00" oninput="recalcTotals()">
-            </div>
-          </div>
-          <div id="totals-actual"></div>
-        </div>
-
-        <!-- Notes -->
-        <div class="editor-section editor-notes-section">
-          <div class="section-title">Notes</div>
-          <textarea class="editor-textarea" id="recipe-notes"
-            placeholder="Optional notes..." rows="3"></textarea>
-        </div>
-
-      </div>
-
-      <div class="editor-footer">
-        <button class="save-btn" id="save-btn" onclick="saveRecipe()">Save Recipe</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ── Menu ── -->
   <div id="screen-menu" class="screen hidden">
 
@@ -516,50 +380,6 @@
   </div>
 
   <!-- Delete confirmation modal -->
-  <div id="del-modal" class="hidden">
-    <div class="del-backdrop" onclick="cancelDeleteModal()"></div>
-    <div class="del-sheet">
-      <div class="del-icon-wrap">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-          <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-        </svg>
-      </div>
-      <div>
-        <div class="del-title">Delete recipe?</div>
-        <div class="del-sub">This will permanently delete <strong id="del-modal-name"></strong> and all its ingredients. This cannot be undone.</div>
-      </div>
-      <div class="del-actions">
-        <button class="del-cancel" onclick="cancelDeleteModal()">Cancel</button>
-        <button class="del-confirm" onclick="doDeleteRecipe()">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Qty modal -->
-  <div id="qty-modal" class="hidden">
-    <div class="qty-modal-backdrop" onclick="cancelQty()"></div>
-    <div class="qty-modal-box">
-      <div class="qty-modal-top">
-        <div class="qty-modal-name" id="qty-modal-name"></div>
-        <div class="qty-modal-meta" id="qty-modal-meta"></div>
-      </div>
-      <div class="qty-modal-field">
-        <label>Quantity</label>
-        <div class="qty-modal-input-row">
-          <input type="number" id="qty-input" class="qty-input"
-            placeholder="0.000" step="0.001" min="0"
-            onkeydown="if(event.key==='Enter') confirmQty()">
-          <span class="qty-unit" id="qty-unit"></span>
-        </div>
-      </div>
-      <div class="qty-modal-actions">
-        <button class="qty-cancel" onclick="cancelQty()">Cancel</button>
-        <button class="qty-confirm" onclick="confirmQty()">Add Ingredient</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Bottom nav -->
   <nav class="bottom-nav" id="bottom-nav">
     <button class="nav-btn active" data-tab="og" onclick="switchTab('og')">
@@ -579,13 +399,6 @@
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
       </svg>
       <span>Menu</span>
-    </button>
-    <button class="nav-btn" data-tab="builder" onclick="switchTab('builder')">
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M12 20h9"/>
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-      </svg>
-      <span>Builder</span>
     </button>
     <button class="nav-btn" data-tab="settings" onclick="switchTab('settings')">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
