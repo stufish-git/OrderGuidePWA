@@ -361,6 +361,7 @@ footer { margin-top: 24px; padding: 12px 16px; border-top: 1px solid var(--borde
 }
 #menu-list-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
 #menu-detail-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+.editor-body { flex: 1; overflow-y: auto; padding-bottom: 32px; -webkit-overflow-scrolling: touch; }
 
 /* Menu toolbar */
 .menu-toolbar {
