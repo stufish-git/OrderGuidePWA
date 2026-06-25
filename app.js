@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.40';
+const VERSION = 'v4.41';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -540,6 +540,14 @@ async function runDiagnostics(){
     catch(e){lines.push('<span style="color:var(--amber)">\u26a0 Cleanup failed (test recipe id '+testId+' left in DB)</span>');}
     out.innerHTML=lines.join('<br>');
   }
+}
+
+// ── Card stat helpers (used by menu card renderer) ────────
+function cStat(label, val) {
+  return '<div class="card-stat"><div class="card-stat-label">'+label+'</div><div class="card-stat-value">'+val+'</div></div>';
+}
+function cStatRaw(label, html) {
+  return '<div class="card-stat"><div class="card-stat-label">'+label+'</div><div class="card-stat-value">'+html+'</div></div>';
 }
 
 // ── Menu background refresh (on focus/visibility) ─────────
