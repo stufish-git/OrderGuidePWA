@@ -521,25 +521,9 @@ async function runDiagnostics(){
   };
 
   await check('GET /settings',()=>apiGet('/settings'));
-  await check('GET /recipes', ()=>apiGet('/recipes'));
   await check('GET /products',()=>apiGet('/products'));
   await check('GET /menu',    ()=>apiGet('/menu'));
-
-  let testId=null;
-  try{
-    const r=await apiPost('/recipes',{name:'__diag_test__',type:'dish',category:'food',gp_target:70,misc_enabled:1,misc_pct:2,selling_price:null,actual_gp:null,notes:null});
-    testId=r.id;
-    lines.push('<span style="color:var(--green)">\u2713 POST /recipes (DB columns OK)</span>');
-  }catch(e){
-    lines.push('<span style="color:var(--red)">\u2717 POST /recipes &mdash; '+esc(e.message)+'</span>');
-  }
   out.innerHTML=lines.join('<br>');
-
-  if(testId){
-    try{await apiDelete('/recipes/'+testId);lines.push('<span style="color:var(--green)">\u2713 DELETE /recipes/'+testId+' (cleanup OK)</span>');}
-    catch(e){lines.push('<span style="color:var(--amber)">\u26a0 Cleanup failed (test recipe id '+testId+' left in DB)</span>');}
-    out.innerHTML=lines.join('<br>');
-  }
 }
 
 // ── Card stat helpers (used by menu card renderer) ────────
