@@ -1,8 +1,8 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.44';
+const VERSION = 'v4.45';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
-const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
+const API_KEY = 'og_app_b1b081803ff0d3b9eb7e25cbe97ec9dab857be9b6f5c289c';
 
 // ── OG State ──────────────────────────────────────────────
 let products = [];
@@ -46,6 +46,7 @@ let priceAlerts = [];
 // ── Settings State ────────────────────────────────────────
 let settingsUnlocked = false;
 let pinEntry         = '';
+let settingsPin      = '';   // kept in memory only while Settings is unlocked; sent to the API to save settings
 
 // ── Boot ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -377,6 +378,7 @@ async function apiCall(method, path, body) {
     cache: 'no-store',
     headers: { 'X-API-Key': API_KEY }
   };
+  if (settingsPin) opts.headers['X-Settings-PIN'] = settingsPin;
   if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
@@ -431,13 +433,15 @@ async function pinSubmit(){
     });
     const data=await r.json();
     if(data.success){
+      settingsPin=pinEntry;
       unlockSettings();
     } else {
       pinEntry=''; renderPinDots();
-      errEl.textContent='Incorrect PIN';
+      const locked = r.status===429;
+      errEl.textContent = locked ? (data.error||'Too many attempts. Try later.') : 'Incorrect PIN';
       const dots=document.getElementById('pin-dots');
       dots.classList.add('shake');
-      setTimeout(()=>{ dots.classList.remove('shake'); errEl.innerHTML='&nbsp;'; },600);
+      setTimeout(()=>{ dots.classList.remove('shake'); if(!locked) errEl.innerHTML='&nbsp;'; },600);
     }
   } catch(e){
     errEl.textContent='Connection error — try again';
@@ -460,7 +464,7 @@ function unlockSettings(){
 }
 
 function lockSettings(){
-  settingsUnlocked=false; pinEntry=''; renderPinDots();
+  settingsUnlocked=false; settingsPin=''; pinEntry=''; renderPinDots();
   document.getElementById('settings-unlocked').classList.add('hidden');
   document.getElementById('settings-locked').classList.remove('hidden');
 }
@@ -495,6 +499,7 @@ async function changePin(){
   if(!/^\d{4,8}$/.test(newPin)){showToast('New PIN must be 4\u20138 digits');return;}
   try {
     await apiPut('/settings/pin',{current_pin:current,new_pin:newPin});
+    settingsPin=newPin;
     document.getElementById('s-current-pin').value='';
     document.getElementById('s-new-pin').value='';
     showToast('PIN changed');
