@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.43';
+const VERSION = 'v4.44';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_live_0bdf8b575f3e1a75de89c775c7b870ba0edd8308e1584ada';
@@ -882,7 +882,10 @@ function renderMenuDetail() {
       html += '<div class="totals-sub-label" style="margin-top:10px">Excel menu price</div>';
       html += tRow('Inc '+vat+'% VAT', '\u00a3'+sell.toFixed(2));
       html += tRow('Ex VAT',           '\u00a3'+sellEx.toFixed(2));
-      if (gp !== null) html += tRow('Gross profit', gp.toFixed(1)+'%', gpCls);
+      if (gp !== null) {
+        html += tRow('Gross profit', gp.toFixed(1)+'%', gpCls);
+        html += tRow('GP cash',      '£'+(sellEx-cost).toFixed(2), gpCls);
+      }
     }
 
     // Local GP modelling — no write-back
