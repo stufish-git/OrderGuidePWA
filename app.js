@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.45';
+const VERSION = 'v4.46';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_app_b1b081803ff0d3b9eb7e25cbe97ec9dab857be9b6f5c289c';
@@ -830,10 +830,139 @@ function openMenuDetail(code) {
 }
 
 function closeMenuDetail() {
+  closePrepPeek();
   document.getElementById('menu-detail-view').classList.add('hidden');
   document.getElementById('menu-list-view').classList.remove('hidden');
   menuDetailRecipe = null;
 }
+
+// ── Ingredient rows (shared by the detail screen and the prep overlay) ──
+// A PREP line becomes tappable when it can be matched to a prep recipe.
+function findPrepForItem(item) {
+  if (!item || !item.is_prep_line) return null;
+  const codes = [item.prep_recipe_code, item.product_code].filter(Boolean);
+  for (const c of codes) {
+    const hit = allMenuRecipes.find(r => r.is_prep && String(r.recipe_code) === String(c));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+function menuIngRowHTML(item, idx) {
+  const lc   = parseFloat(item.line_cost) || 0;
+  const uc   = parseFloat(item.unit_cost) || 0;
+  const prep = findPrepForItem(item);
+  const prepBadge = item.is_prep_line ? '<span class="ing-prep-badge">PREP</span>' : '';
+  return '<div class="menu-ing-row'+(prep ? ' tappable' : '')+'"' +
+      (prep ? ' data-prep="'+esc(prep.recipe_code)+'" data-idx="'+idx+'"' : '') + '>' +
+    '<div class="menu-ing-info">' +
+      '<div class="menu-ing-name">'+esc(item.product_name||'')+prepBadge+'</div>' +
+      '<div class="menu-ing-sub">'+esc(item.supplier||'') +
+        (item.usage_description ? ' · '+esc(item.usage_description) : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="menu-ing-costs">' +
+      (uc > 0 ? '<div class="menu-ing-uc">'+esc(item.unit_measure||'')+' @ £'+uc.toFixed(2)+'</div>' : '') +
+      '<div class="menu-ing-lc">'+(lc > 0 ? '£'+lc.toFixed(2) : '—')+'</div>' +
+    '</div>' +
+    (prep ? '<span class="ing-chev">›</span>' : '') +
+  '</div>';
+}
+
+// ── Prep overlay ──────────────────────────────────────────
+// Tap a PREP ingredient to see that prep's cost and ingredients over the
+// current screen. Tap a PREP inside it to go one level deeper (back arrow
+// returns). Entries are {code, parent, idx} so the view always re-reads the
+// live recipe data.
+let prepPeekStack = [];
+const PREP_PEEK_MAX = 3;
+
+function openPrepPeek(code, parentCode, idx) {
+  code = String(code); parentCode = String(parentCode);
+  if (prepPeekStack.length >= PREP_PEEK_MAX) return;
+  if (prepPeekStack.some(e => e.code === code)) return;   // never loop back into itself
+  if (!allMenuRecipes.some(r => r.is_prep && String(r.recipe_code) === code)) return;
+  prepPeekStack.push({ code, parent: parentCode, idx });
+  renderPrepPeek();
+}
+
+function prepPeekBack() { prepPeekStack.pop(); renderPrepPeek(); }
+function closePrepPeek() { prepPeekStack = []; renderPrepPeek(); }
+
+function renderPrepPeek() {
+  const sheet = document.getElementById('prep-peek');
+  if (!sheet) return;
+  if (!prepPeekStack.length) { sheet.classList.remove('open'); return; }
+
+  const top  = prepPeekStack[prepPeekStack.length - 1];
+  const prep = allMenuRecipes.find(r => r.is_prep && String(r.recipe_code) === top.code);
+  if (!prep) { closePrepPeek(); return; }
+  const parent = allMenuRecipes.find(r => String(r.recipe_code) === top.parent);
+  const line   = parent && parent.items ? parent.items[top.idx] : null;
+
+  document.getElementById('peek-title').textContent = prep.plu_name || '';
+  document.getElementById('peek-crumb').textContent = parent ? 'In ' + (parent.plu_name || '') : '';
+  document.getElementById('peek-back').classList.toggle('show', prepPeekStack.length > 1);
+
+  const total = parseFloat(prep.total_cost) || 0;
+  const pack  = parseFloat(prep.pack_size)  || 0;
+  const qtyFmt = n => String(parseFloat((parseFloat(n) || 0).toFixed(3)));
+
+  let html = '';
+
+  // How much of this prep the parent recipe uses
+  if (line) {
+    const lc = parseFloat(line.line_cost) || 0;
+    html += '<div class="editor-section" style="border-left-color:var(--accent)">';
+    html += '<div class="section-title">Used in '+esc(parent.plu_name||'')+'</div>';
+    if (line.stock_deduction != null) {
+      html += tRow('Amount used', esc(qtyFmt(line.stock_deduction)+(line.unit_measure ? ' '+line.unit_measure : '')));
+    }
+    html += tRow('Cost in recipe', lc > 0 ? '£'+lc.toFixed(2) : '—');
+    html += '</div>';
+  }
+
+  // The prep itself
+  html += '<div class="editor-section" style="border-left-color:var(--green)">';
+  html += '<div class="section-title">Prep batch</div>';
+  html += tRow('Batch cost', total > 0 ? '£'+total.toFixed(2) : '—');
+  if (pack > 0) {
+    html += tRow('Batch size', esc(qtyFmt(pack)));
+    if (total > 0) html += tRow('Cost per unit', '£'+(total / pack).toFixed(2));
+  }
+  if (!prep.costing_complete) {
+    html += '<div class="menu-detail-warn">⚠️ One or more ingredient costs were missing '+
+            'from the order guide when last synced. The total shown is incomplete.</div>';
+  }
+  html += '</div>';
+
+  // Its ingredients (nested PREP lines are tappable)
+  const items = prep.items || [];
+  html += '<div class="editor-section editor-section-ingredients" style="margin-bottom:12px">';
+  html += '<div class="section-title">Ingredients</div>';
+  html += items.length
+    ? '<div class="menu-ing-list">' + items.map((it, i) => menuIngRowHTML(it, i)).join('') + '</div>'
+    : '<div class="recipe-list-state">No ingredient lines.</div>';
+  html += '</div>';
+
+  const body = document.getElementById('peek-body');
+  body.innerHTML = html;
+  body.scrollTop = 0;
+  sheet.classList.add('open');
+}
+
+// One tap handler for every tappable PREP line (detail screen and overlay)
+document.addEventListener('click', e => {
+  const row = e.target.closest ? e.target.closest('[data-prep]') : null;
+  if (!row) return;
+  const inPeek = !!row.closest('#prep-peek');
+  const parentCode = inPeek
+    ? prepPeekStack[prepPeekStack.length - 1].code
+    : (menuDetailRecipe ? menuDetailRecipe.recipe_code : null);
+  if (parentCode == null) return;
+  openPrepPeek(row.dataset.prep, parentCode, parseInt(row.dataset.idx, 10));
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePrepPeek(); });
 
 function renderMenuDetail() {
   if (!menuDetailRecipe) return;
@@ -912,23 +1041,7 @@ function renderMenuDetail() {
     html += '<div class="editor-section editor-section-ingredients" style="margin-bottom:12px">';
     html += '<div class="section-title">Ingredients</div>';
     html += '<div class="menu-ing-list">';
-    items.forEach(item => {
-      const lc = parseFloat(item.line_cost) || 0;
-      const uc = parseFloat(item.unit_cost) || 0;
-      const prepBadge = item.is_prep_line ? '<span class="ing-prep-badge">PREP</span>' : '';
-      html += '<div class="menu-ing-row">' +
-        '<div class="menu-ing-info">' +
-          '<div class="menu-ing-name">'+esc(item.product_name||'')+prepBadge+'</div>' +
-          '<div class="menu-ing-sub">'+esc(item.supplier||'') +
-            (item.usage_description ? ' \u00b7 '+esc(item.usage_description) : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="menu-ing-costs">' +
-          (uc > 0 ? '<div class="menu-ing-uc">'+esc(item.unit_measure||'')+' @ \u00a3'+uc.toFixed(2)+'</div>' : '') +
-          '<div class="menu-ing-lc">'+(lc > 0 ? '\u00a3'+lc.toFixed(2) : '\u2014')+'</div>' +
-        '</div>' +
-      '</div>';
-    });
+    items.forEach((item, idx) => { html += menuIngRowHTML(item, idx); });
     html += '</div></div>';
   }
 

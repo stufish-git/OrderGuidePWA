@@ -426,6 +426,22 @@
     </div>
   </div>
 
+  <!-- Prep overlay (opened by tapping a PREP ingredient on the Menu tab) -->
+  <div id="prep-peek" onclick="if(event.target===this)closePrepPeek()">
+    <div class="peek-sheet">
+      <div class="peek-grab"></div>
+      <div class="peek-header">
+        <button class="peek-back" id="peek-back" onclick="prepPeekBack()" aria-label="Back">&#x2039;</button>
+        <div class="peek-title-block">
+          <span class="peek-crumb" id="peek-crumb"></span>
+          <span class="peek-title" id="peek-title"></span>
+        </div>
+        <button class="modal-close" onclick="closePrepPeek()" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="peek-body" id="peek-body"></div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
