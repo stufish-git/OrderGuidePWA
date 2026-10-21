@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.46';
+const VERSION = 'v4.47';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_app_b1b081803ff0d3b9eb7e25cbe97ec9dab857be9b6f5c289c';
@@ -927,8 +927,11 @@ function renderPrepPeek() {
   html += '<div class="section-title">Prep batch</div>';
   html += tRow('Batch cost', total > 0 ? '£'+total.toFixed(2) : '—');
   if (pack > 0) {
-    html += tRow('Batch size', esc(qtyFmt(pack)));
-    if (total > 0) html += tRow('Cost per unit', '£'+(total / pack).toFixed(2));
+    // A prep has no unit of its own; the line that uses it carries the unit
+    // (e.g. Each, kg) and cost per unit is worked out on that same basis.
+    const unit = line && line.unit_measure ? String(line.unit_measure) : '';
+    html += tRow('Batch size', esc(qtyFmt(pack) + (unit ? ' ' + unit : '')));
+    if (total > 0) html += tRow('Cost per ' + (esc(unit.toLowerCase()) || 'unit'), '£'+(total / pack).toFixed(2));
   }
   if (!prep.costing_complete) {
     html += '<div class="menu-detail-warn">⚠️ One or more ingredient costs were missing '+
