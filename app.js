@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────
-const VERSION = 'v4.47';
+const VERSION = 'v4.48';
 
 const API_URL = 'https://orderguideapi.marketplacerest.com';
 const API_KEY = 'og_app_b1b081803ff0d3b9eb7e25cbe97ec9dab857be9b6f5c289c';
@@ -548,10 +548,68 @@ function tRow(label, val, cls) {
 }
 
 // ── Menu background refresh (on focus/visibility) ─────────
+
+// ── Stock-item (non-recipe PLU) support ───────────────────
+// PLU items that have no recipe (e.g. a 250ml glass of wine) are pushed by
+// Excel to GET /plu. They are reshaped here into the same object shape as a
+// recipe so search, filters, GP slider, cards and detail view all work as-is.
+function normalisePluItem(p) {
+  const cost  = parseFloat(p.cost) || 0;
+  const group = (p.plu_group || '').toLowerCase();
+  const sd    = parseFloat(p.stock_deduction);
+  return {
+    recipe_code: 'PLU' + p.sku,
+    sku: String(p.sku),
+    plu_name: p.plu_name,
+    department: p.department || '',
+    is_prep: false,
+    is_plu: true,
+    plu_group: group,
+    total_cost: cost,
+    selling_price_inc_vat: p.selling_price_inc_vat,
+    costing_complete: true,
+    item_count: 0,
+    items: [{
+      sort_order: 1,
+      is_prep_line: false,
+      supplier: p.supplier || '',
+      product_name: p.product_name || '',
+      usage_description: isNaN(sd) ? '' : 'Stock deduction ' + sd,
+      stock_deduction: isNaN(sd) ? null : sd,
+      unit_measure: p.unit_measure || '',
+      unit_cost: parseFloat(p.unit_cost) || 0,
+      line_cost: cost
+    }],
+    below_target: pluBelowTarget(cost, parseFloat(p.selling_price_inc_vat) || 0, group)
+  };
+}
+
+function pluBelowTarget(rawCost, sell, group) {
+  if (rawCost <= 0 || sell <= 0) return false;
+  const vat     = parseFloat(appSettings.vat_rate) || 20;
+  const miscPct = parseFloat(appSettings.misc_charge_pct) || 2;
+  const cost    = rawCost * (menuMiscEnabled && group === 'dry' ? 1 + miscPct / 100 : 1);
+  const sellEx  = sell / (1 + vat / 100);
+  const gp      = (sellEx - cost) / sellEx * 100;
+  const target  = group === 'wet' ? (parseFloat(appSettings.gp_target_wet) || 75)
+                                  : (parseFloat(appSettings.gp_target_dry) || 70);
+  return gp < target;
+}
+
+async function fetchMenuAll() {
+  const recipes = await apiGet('/menu?with_items=1');
+  let plu = [];
+  try {
+    const raw = await apiGet('/plu');
+    plu = (Array.isArray(raw) ? raw : (raw.items || [])).map(normalisePluItem);
+  } catch(e) { /* /plu not available yet — recipes still load */ }
+  return recipes.concat(plu);
+}
+
 async function refreshMenuData() {
   if (currentTab !== 'menu' || !menuLoaded) return;
   try {
-    allMenuRecipes  = await apiGet('/menu?with_items=1');
+    allMenuRecipes  = await fetchMenuAll();
     menuFullyLoaded = true;
     renderMenuList();
     renderGPAlertBanner();
@@ -573,7 +631,7 @@ async function loadMenuRecipes() {
 
   try {
     // Single call — returns list + all items together
-    allMenuRecipes = await apiGet('/menu?with_items=1');
+    allMenuRecipes = await fetchMenuAll();
     menuLoaded      = true;
     menuFullyLoaded = true;
     renderMenuList();
@@ -713,6 +771,7 @@ function renderMenuList() {
   if      (menuTypeFilter === 'wet')  list = list.filter(r => !r.is_prep && (r.plu_group||'').toLowerCase() === 'wet');
   else if (menuTypeFilter === 'dry')  list = list.filter(r => !r.is_prep && (r.plu_group||'').toLowerCase() === 'dry');
   else if (menuTypeFilter === 'prep') list = list.filter(r =>  r.is_prep);
+  else if (menuTypeFilter === 'plu')  list = list.filter(r =>  r.is_plu);
 
   // Text search — PLU name and SKU
   if (menuSearchText.trim()) {
@@ -810,7 +869,8 @@ function menuCardHTML(r) {
       warnIcon +
     '</div>' +
     '<div class="card-stats-section">'+statsHtml+'</div>' +
-    (count ? '<div class="card-footer">'+count+' ingredient'+(count!==1?'s':'')+'</div>' : '') +
+    (r.is_plu ? '<div class="card-footer">Stock item'+(r.department ? ' \u00b7 '+esc(r.department) : '')+'</div>'
+      : count ? '<div class="card-footer">'+count+' ingredient'+(count!==1?'s':'')+'</div>' : '') +
   '</div>';
 }
 
@@ -942,7 +1002,7 @@ function renderPrepPeek() {
   // Its ingredients (nested PREP lines are tappable)
   const items = prep.items || [];
   html += '<div class="editor-section editor-section-ingredients" style="margin-bottom:12px">';
-  html += '<div class="section-title">Ingredients</div>';
+  html += '<div class="section-title">'+(r.is_plu ? 'Stock item' : 'Ingredients')+'</div>';
   html += items.length
     ? '<div class="menu-ing-list">' + items.map((it, i) => menuIngRowHTML(it, i)).join('') + '</div>'
     : '<div class="recipe-list-state">No ingredient lines.</div>';
@@ -989,8 +1049,13 @@ function renderMenuDetail() {
   // ── Details section ──────────────────────────────────────
   html += '<div class="editor-section editor-section-details">';
   if (r.sku) html += menuDetailRow('SKU', r.sku, true);
-  html += menuDetailRow('Receipe Code', r.recipe_code, true);
-  html += menuDetailRow('Type', isPrep ? 'Prep item' : (group === 'wet' ? 'Wet' : group === 'dry' ? 'Dry' : 'Dish'), false);
+  if (r.is_plu) {
+    if (r.department) html += menuDetailRow('Department', r.department, false);
+  } else {
+    html += menuDetailRow('Receipe Code', r.recipe_code, true);
+  }
+  html += menuDetailRow('Type', r.is_plu ? (group === 'wet' ? 'Wet stock item' : 'Dry stock item')
+                                         : isPrep ? 'Prep item' : (group === 'wet' ? 'Wet' : group === 'dry' ? 'Dry' : 'Dish'), false);
   if (!r.costing_complete) {
     html += '<div class="menu-detail-warn">\u26a0\ufe0f One or more ingredient costs were missing '+
             'from the order guide when last synced. The total shown is incomplete.</div>';
@@ -1042,7 +1107,7 @@ function renderMenuDetail() {
   const items = r.items || [];
   if (items.length) {
     html += '<div class="editor-section editor-section-ingredients" style="margin-bottom:12px">';
-    html += '<div class="section-title">Ingredients</div>';
+    html += '<div class="section-title">'+(r.is_plu ? 'Stock item' : 'Ingredients')+'</div>';
     html += '<div class="menu-ing-list">';
     items.forEach((item, idx) => { html += menuIngRowHTML(item, idx); });
     html += '</div></div>';
